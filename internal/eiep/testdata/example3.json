@@ -1,0 +1,226 @@
+{
+  "FileType": "PRCSCHD",
+  "Version": 2.011,
+  "Sender": "ASRL",
+  "SentOnBehalfOf": "ASRL",
+  "Recipient": "ANY",
+  "RunDateTime": "2016-05-22T12:23:45+12",
+  "ExtractDateTime": "2016-05-22T12:23:45+12",
+  "Uniquifier": "c7d90f3a-d62b-4923-95c4-4aef120d831e",
+  "RecordCount": 14,
+  "UtilType": "E",
+  "FileStatus": "I",
+  "Retailers": [
+    {
+      "TraderId": "ASRL",
+      "RetailerId": "ASRL",
+      "RetailerBrandName": "Simple Retailer Ltd",
+      "Attributes": [
+        {
+          "AttributeId": "AT_anzsic_000000",
+          "Attribute": "ANZSIC",
+          "TextValue": "000000"
+        },{
+          "AttributeId": "AT_Disc_PP_10",
+          "Attribute": "DISCOUNT_PROMPT_PAYMENT",
+          "NumValue": 10,
+          "TextValue": "%"
+        },{
+          "AttributeId": "AT_Disc_PRI_2",
+          "Attribute": "DISCOUNT_PAYMENT_RETAILER_INITIATED",
+          "NumValue": 2,
+          "TextValue": "%"
+        }
+      ],
+      "Schedules": [
+        {
+          "ScheduleId": "SC_h21_24",
+          "DaylightSavings": 1,
+          "StartTime": "21:00",
+          "EndTime": "24:00"
+        },{
+          "ScheduleId": "SC_h00_07",
+          "DaylightSavings": 1,
+          "StartTime": "00:00",
+          "EndTime": "07:00"
+        }
+      ],
+      "TariffRegions": [
+        {
+          "TariffRegionId": "TR_CKHK_RSU",
+          "Networks": [
+            {
+              "Network": "CKHK",
+              "NSP": [ "CPK0111CKHK", "CPK0331CKHK", "WIL0331CKHK" ],
+              "DistributorPriceCategory": [ "RSU" ],
+              "DistributorLossCategory": [
+                "LCC1"
+              ]
+            }
+          ]
+        },{
+          "TariffRegionId": "TR_CKHK_RLU",
+          "Networks": [
+            {
+              "Network": "CKHK",
+              "NSP": [ "CPK0111CKHK", "CPK0331CKHK", "WIL0331CKHK" ],
+              "DistributorPriceCategory": [ "RLU" ],
+              "DistributorLossCategory": [
+                "LCC1"
+              ]
+            }
+          ]
+        }
+      ],
+      "TariffTypes": [
+        {
+          "TariffTypeId": "TT_dly_sup_chg",
+          "Description": "Daily supply charge",
+          "FixedVariable": "F",
+          "Unit": "Day",
+          "FlowDirection": "B"
+        },{
+          "TariffTypeId": "TT_any",
+          "Description": "Anytime",
+          "FixedVariable": "V",
+          "Unit": "kWh",
+          "FlowDirection": "X",
+          "RCC-POA": [ [ "UN", 24 ] ]
+        },{
+          "TariffTypeId": "TT_aic",
+          "Description": "All inclusive",
+          "FixedVariable": "V",
+          "Unit": "kWh",
+          "FlowDirection": "X",
+          "RCC-POA": [ [ "IN", 17 ] ]
+        },{
+          "TariffTypeId": "TT_ctl_hwt",
+          "Description": "Controlled - hot water",
+          "FixedVariable": "V",
+          "Unit": "kWh",
+          "FlowDirection": "X",
+          "RCC-POA": [ [ "CN", 19 ] ]
+        },{
+          "TariffTypeId": "TT_day",
+          "Description": "Daytime",
+          "FixedVariable": "V",
+          "Unit": "kWh",
+          "FlowDirection": "X",
+          "RCC-POA": [ [ "D", 16 ] ]
+        },{
+          "TariffTypeId": "TT_ngt",
+          "Description": "Night only",
+          "FixedVariable": "V",
+          "Unit": "kWh",
+          "FlowDirection": "X",
+          "RCC-POA": [ [ "N", 8 ] ]
+        },{
+          "TariffTypeId": "TT_ev_ngt",
+          "Description": "Electric vehicle - night only",
+          "FixedVariable": "V",
+          "Unit": "kWh",
+          "FlowDirection": "X",
+          "ScheduleIds": [ "SC_h21_24", "SC_h00_07" ],
+          "RCC-POA": [ [ "UN", 10 ] ]
+        }
+      ],
+      "CustomerGroups": [
+        {
+          "CustomerGroup": "General domestic",
+          "AttributeIds": [ "AT_anzsic_000000", "AT_Disc_PP_10", "AT_Disc_PRI_2" ],
+          "Plans": [
+            {
+              "Plan": "PRSU",
+              "Description": "Residential - standard user",
+              "StartDate": "2016-04-01",
+              "CloseDate": "2016-06-30",
+              "LowFixedCharge": "N",
+              "Tariffs": [
+                {
+                  "Tariff": "RSU-FIXED",
+                  "Rate": 2.1560,
+                  "TariffRegion": "TR_CKHK_RSU",
+                  "TariffType": "TT_dly_sup_chg"
+                },{
+                  "Tariff": "RSU-24UN",
+                  "Rate": 0.1937,
+                  "TariffRegion": "TR_CKHK_RSU",
+                  "TariffType": "TT_any"
+                },{
+                  "Tariff": "RSU-AICO",
+                  "Rate": 0.1737,
+                  "TariffRegion": "TR_CKHK_RSU",
+                  "TariffType": "TT_aic"
+                },{
+                  "Tariff": "RSU-CTRL",
+                  "Rate": 0.1537,
+                  "TariffRegion": "TR_CKHK_RSU",
+                  "TariffType": "TT_ctl_hwt"
+                },{
+                  "Tariff": "RSU-16D",
+                  "Rate": 0.1937,
+                  "TariffRegion": "TR_CKHK_RSU",
+                  "TariffType": "TT_day"
+                },{
+                  "Tariff": "RSU-NITE",
+                  "Rate": 0.1337,
+                  "TariffRegion": "TR_CKHK_RSU",
+                  "TariffType": "TT_ngt"
+                },{
+                  "Tariff": "RSU-EVNITE",
+                  "Rate": 0.1337,
+                  "TariffRegion": "TR_CKHK_RSU",
+                  "TariffType": "TT_ev_ngt"
+                }
+              ]
+            },{
+              "Plan": "PRLU",
+              "Description": "Residential - low user",
+              "StartDate": "2016-04-01",
+              "CloseDate": "2016-06-30",
+              "LowFixedCharge": "Y",
+              "Tariffs": [
+                {
+                  "Tariff": "RLU-FIXED",
+                  "Rate": 0.3333,
+                  "TariffRegion": "TR_CKHK_RLU",
+                  "TariffType": "TT_dly_sup_chg"
+                },{
+                  "Tariff": "RLU-24UN",
+                  "Rate": 0.2768,
+                  "TariffRegion": "TR_CKHK_RLU",
+                  "TariffType": "TT_any"
+                },{
+                  "Tariff": "RLU-AICO",
+                  "Rate": 0.2568,
+                  "TariffRegion": "TR_CKHK_RLU",
+                  "TariffType": "TT_aic"
+                },{
+                  "Tariff": "RLU-CTRL",
+                  "Rate": 0.2368,
+                  "TariffRegion": "TR_CKHK_RLU",
+                  "TariffType": "TT_ctl_hwt"
+                },{
+                  "Tariff": "RLU-16D",
+                  "Rate": 0.2768,
+                  "TariffRegion": "TR_CKHK_RLU",
+                  "TariffType": "TT_day"
+                },{
+                  "Tariff": "RLU-NITE",
+                  "Rate": 0.2368,
+                  "TariffRegion": "TR_CKHK_RLU",
+                  "TariffType": "TT_ngt"
+                },{
+                  "Tariff": "RLU-EVNITE",
+                  "Rate": 0.2368,
+                  "TariffRegion": "TR_CKHK_RLU",
+                  "TariffType": "TT_ev_ngt"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

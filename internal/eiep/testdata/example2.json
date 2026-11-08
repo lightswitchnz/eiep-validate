@@ -1,0 +1,261 @@
+{
+  "FileType": "PRCSCHD",
+  "Version": 2.011,
+  "Sender": "ASRL",
+  "SentOnBehalfOf": "ASRL",
+  "Recipient": "ANY",
+  "RunDateTime": "2016-05-22T12:23:45+12",
+  "ExtractDateTime": "2016-05-22T12:23:45+12",
+  "Uniquifier": "c7d90f3a-d62b-4923-95c4-4aef120d831e",
+  "RecordCount": 14,
+  "UtilType": "E",
+  "FileStatus": "I",
+  "Retailers": [
+    {
+      "TraderId": "ASRL",
+      "RetailerId": "ASRL",
+      "RetailerBrandName": "Simple Retailer Ltd",
+      "Attributes": [
+        {
+          "AttributeId": "AT_anzsic_000000",
+          "Attribute": "ANZSIC",
+          "TextValue": "000000"
+        }
+      ],
+      "Schedules": [
+        {
+          "ScheduleId": "SC_summer",
+          "DaylightSavings": 1,
+          "Month": [ "JAN", "FEB", "MAR", "OCT", "NOV", "DEC" ]
+        },{
+          "ScheduleId": "SC_winter",
+          "DaylightSavings": 1,
+          "Month": [ "APR", "MAY", "JUN", "JUL", "AUG", "SEP" ]
+        }
+      ],
+      "TariffRegions": [
+        {
+          "TariffRegionId": "TR_CKHK_RSU",
+          "Networks": [
+            {
+              "Network": "CKHK",
+              "DistributorPriceCategory": [ "RSU" ]
+            }
+          ]
+        },{
+          "TariffRegionId": "TR_CKHK_RLU",
+          "Networks": [
+            {
+              "Network": "CKHK",
+              "DistributorPriceCategory": [ "RLU" ]
+            }
+          ]
+        }
+      ],
+      "TariffTypes": [
+        {
+          "TariffTypeId": "TT_dly_sup_chg",
+          "Description": "Daily supply charge",
+          "FixedVariable": "F",
+          "Unit": "Day",
+          "FlowDirection": "B"
+        },{
+          "TariffTypeId": "TT_any_sum",
+          "Description": "Anytime (summer)",
+          "FixedVariable": "V",
+          "Unit": "kWh",
+          "FlowDirection": "X",
+          "ScheduleIds": [ "SC_summer" ],
+          "RCC-POA": [ [ "UN", 24 ] ]
+        },{
+          "TariffTypeId": "TT_any_win",
+          "Description": "Anytime (winter)",
+          "FixedVariable": "V",
+          "Unit": "kWh",
+          "FlowDirection": "X",
+          "ScheduleIds": [ "SC_winter" ],
+          "RCC-POA": [ [ "UN", 24 ] ]
+        },{
+          "TariffTypeId": "TT_aic_sum",
+          "Description": "All inclusive (summer)",
+          "FixedVariable": "V",
+          "Unit": "kWh",
+          "FlowDirection": "X",
+          "ScheduleIds": [ "SC_summer" ],
+          "RCC-POA": [ [ "IN", 17 ] ]
+        },{
+          "TariffTypeId": "TT_aic_win",
+          "Description": "All inclusive (winter)",
+          "FixedVariable": "V",
+          "Unit": "kWh",
+          "FlowDirection": "X",
+          "ScheduleIds": [ "SC_winter" ],
+          "RCC-POA": [ [ "IN", 17 ] ]
+        },{
+          "TariffTypeId": "TT_ctl_hwt_sum",
+          "Description": "Controlled - hot water (summer)",
+          "FixedVariable": "V",
+          "Unit": "kWh",
+          "FlowDirection": "X",
+          "ScheduleIds": [ "SC_summer" ],
+          "RCC-POA": [ [ "CN", 19 ] ]
+        },{
+          "TariffTypeId": "TT_ctl_hwt_win",
+          "Description": "Controlled - hot water (winter)",
+          "FixedVariable": "V",
+          "Unit": "kWh",
+          "FlowDirection": "X",
+          "ScheduleIds": [ "SC_winter" ],
+          "RCC-POA": [ [ "CN", 19 ] ]
+        },{
+          "TariffTypeId": "TT_dly_sup_chg_low_use",
+          "Description": "Daily supply charge (low user)",
+          "FixedVariable": "F",
+          "Unit": "Day",
+          "FlowDirection": "B"
+        },{
+          "TariffTypeId": "TT_any_low_use_sum",
+          "Description": "Anytime (low user - summer)",
+          "FixedVariable": "V",
+          "Unit": "kWh",
+          "FlowDirection": "X",
+          "ScheduleIds": [ "SC_summer" ],
+          "RCC-POA": [ [ "UN", 24 ] ]
+        },{
+          "TariffTypeId": "TT_any_low_use_win",
+          "Description": "Anytime (low user - winter)",
+          "FixedVariable": "V",
+          "Unit": "kWh",
+          "FlowDirection": "X",
+          "ScheduleIds": [ "SC_winter" ],
+          "RCC-POA": [ [ "UN", 24 ] ]
+        },{
+          "TariffTypeId": "TT_aic_low_use_sum",
+          "Description": "All inclusive (low user - summer)",
+          "FixedVariable": "V",
+          "Unit": "kWh",
+          "FlowDirection": "X",
+          "ScheduleIds": [ "SC_summer" ],
+          "RCC-POA": [ [ "IN", 17 ] ]
+        },{
+          "TariffTypeId": "TT_aic_low_use_win",
+          "Description": "All inclusive (low user - winter)",
+          "FixedVariable": "V",
+          "Unit": "kWh",
+          "FlowDirection": "X",
+          "ScheduleIds": [ "SC_winter" ],
+          "RCC-POA": [ [ "IN", 17 ] ]
+        },{
+          "TariffTypeId": "TT_ctl_hwt_low_use_sum",
+          "Description": "Controlled - hot water (low user - summer)",
+          "FixedVariable": "V",
+          "Unit": "kWh",
+          "FlowDirection": "X",
+          "ScheduleIds": [ "SC_summer" ],
+          "RCC-POA": [ [ "CN", 19 ] ]
+        },{
+          "TariffTypeId": "TT_ctl_hwt_low_use_win",
+          "Description": "Controlled - hot water (low user - winter)",
+          "FixedVariable": "V",
+          "Unit": "kWh",
+          "FlowDirection": "X",
+          "ScheduleIds": [ "SC_winter" ],
+          "RCC-POA": [ [ "CN", 19 ] ]
+        }
+      ],
+      "CustomerGroups": [
+        {
+          "CustomerGroup": "General domestic",
+          "AttributeIds": [ "AT_anzsic_000000" ],
+          "Plans": [
+            {
+              "Plan": "PRSU",
+              "Description": "Residential - seasonal standard user",
+              "LowFixedCharge": "N",
+              "Tariffs": [
+                {
+                  "Tariff": "RSU-FIXED",
+                  "Rate": 2.1560,
+                  "TariffRegion": "TR_CKHK_RSU",
+                  "TariffType": "TT_dly_sup_chg"
+                },{
+                  "Tariff": "RSU-24UN-S",
+                  "Rate": 0.1837,
+                  "TariffRegion": "TR_CKHK_RSU",
+                  "TariffType": "TT_any_sum"
+                },{
+                  "Tariff": "RSU-24UN-W",
+                  "Rate": 0.2037,
+                  "TariffRegion": "TR_CKHK_RSU",
+                  "TariffType": "TT_any_win"
+                },{
+                  "Tariff": "RSU-AICO-S",
+                  "Rate": 0.1637,
+                  "TariffRegion": "TR_CKHK_RSU",
+                  "TariffType": "TT_aic_sum"
+                },{
+                  "Tariff": "RSU-AICO-W",
+                  "Rate": 0.1837,
+                  "TariffRegion": "TR_CKHK_RSU",
+                  "TariffType": "TT_aic_win"
+                },{
+                  "Tariff": "RSU-CTRL-S",
+                  "Rate": 0.1437,
+                  "TariffRegion": "TR_CKHK_RSU",
+                  "TariffType": "TT_ctl_hwt_sum"
+                },{
+                  "Tariff": "RSU-CTRL-W",
+                  "Rate": 0.1637,
+                  "TariffRegion": "TR_CKHK_RSU",
+                  "TariffType": "TT_ctl_hwt_win"
+                }
+              ]
+            },{
+              "Plan": "PRLU",
+              "Description": "Residential - seasonal low user",
+              "LowFixedCharge": "Y",
+              "Tariffs": [
+                {
+                  "Tariff": "RLU-FIXED",
+                  "Rate": 0.3333,
+                  "TariffRegion": "TR_CKHK_RLU",
+                  "TariffType": "TT_dly_sup_chg_low_use"
+                },{
+                  "Tariff": "RLU-24UN-S",
+                  "Rate": 0.2668,
+                  "TariffRegion": "TR_CKHK_RLU",
+                  "TariffType": "TT_any_low_use_sum"
+                },{
+                  "Tariff": "RLU-24UN-W",
+                  "Rate": 0.2868,
+                  "TariffRegion": "TR_CKHK_RLU",
+                  "TariffType": "TT_any_low_use_win"
+                },{
+                  "Tariff": "RLU-AICO-S",
+                  "Rate": 0.2468,
+                  "TariffRegion": "TR_CKHK_RLU",
+                  "TariffType": "TT_aic_low_use_sum"
+                },{
+                  "Tariff": "RLU-AICO-W",
+                  "Rate": 0.2668,
+                  "TariffRegion": "TR_CKHK_RLU",
+                  "TariffType": "TT_aic_low_use_win"
+                },{
+                  "Tariff": "RLU-CTRL-S",
+                  "Rate": 0.2268,
+                  "TariffRegion": "TR_CKHK_RLU",
+                  "TariffType": "TT_ctl_hwt_low_use_sum"
+                },{
+                  "Tariff": "RLU-CTRL-W",
+                  "Rate": 0.2468,
+                  "TariffRegion": "TR_CKHK_RLU",
+                  "TariffType": "TT_ctl_hwt_low_use_win"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

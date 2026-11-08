@@ -1,0 +1,298 @@
+{
+  "FileType": "PRCSCHD",
+  "Version": 2.011,
+  "Sender": "ASRL",
+  "SentOnBehalfOf": "ASRL",
+  "Recipient": "3ABC",
+  "RunDateTime": "2016-05-22T12:23:45+12",
+  "ExtractDateTime": "2016-05-22T12:23:45+12",
+  "Uniquifier": "c7d90f3a-d62b-4923-95c4-4aef120d831e",
+  "RecordCount": 44,
+  "UtilType": "E",
+  "FileStatus": "I",
+  "Retailers": [
+    {
+      "TraderId": "ASRL",
+      "RetailerId": "ASRL",
+      "RetailerBrandName": "A Simple Retailer Lid",
+      "Attributes": [
+        {
+          "AttributeId": "AT_anzsic_1",
+          "Attribute": "ANZSIC",
+          "Description": "1"
+        },{
+          "AttributeId": "AT_bdl_gas_onl",
+          "Attribute": "BUNDLED_GAS",
+          "Description": "Only available bundled with gas"
+        },{
+          "AttributeId": "AT_crd_chk",
+          "Attribute": "CREDIT_CHECK"
+        },{
+          "AttributeId": "AT_dsc_gas_10",
+          "Attribute": "DISCOUNT_GAS",
+          "NumValue": 10,
+          "TextValue": "%",
+          "Description": "10% Discount for bundling with gas"
+        },{
+          "AttributeId": "AT_mtr_typ_nhh",
+          "Attribute": "METER_TYPE_NHH"
+        },{
+          "AttributeId": "AT_anzsic_4",
+          "Attribute": "ANZSIC",
+          "Description": "4"
+        }
+      ],
+      "TariffRegions": [
+        {
+          "TariffRegionId": "TR_AKL_U",
+          "Networks": [
+            {
+              "Network": "UNET",
+              "DistributorPriceCategory": [ "WRNLU", "WRNSU", "WRUL", "WRUS" ]
+            },{
+              "Network": "VECT",
+              "DistributorPriceCategory": [ "ARNLU", "ARNSU", "ARUL", "ARUS" ]
+            }
+          ]
+        },{
+          "TariffRegionId": "TR_NI",
+          "Networks": [
+            {
+              "Network": "CKHK",
+              "DistributorPriceCategory": [ "RLU", "RLUTOU", "RSU", "RSUTOU" ]
+            },{
+              "Network": "UNET",
+              "DistributorPriceCategory": [ "WRNLU", "WRNSU", "WRUL", "WRUS", "WRCL",
+              "WRCS", "WRNLC", "WRNSC" ]
+            },{
+              "Network": "VECT",
+              "DistributorPriceCategory": [ "ARNLU", "ARNSU", "ARUL", "ARUS", "ARCL", "ARCS",
+              "ARNLC", "ARNSC" ]
+            }
+          ]
+        },{
+          "TariffRegionId": "TR_AKL_C",
+          "Networks": [
+            {
+              "Network": "UNET",
+              "DistributorPriceCategory": [ "WRCL", "WRCS", "WRNLC", "WRNSC" ]
+            },{
+              "Network": "VECT",
+              "DistributorPriceCategory": [ "ARCL", "ARCS", "ARNLC", "ARNSC" ]
+            }
+          ]
+        },{
+          "TariffRegionId": "TR_CKHK",
+          "Networks": [
+            {
+              "Network": "CKHK",
+              "DistributorPriceCategory": [ "RLU", "RLUTOU", "RSU", "RSUTOU" ]
+            }
+          ]
+        },{
+          "TariffRegionId": "TR_AKL_RES",
+          "Networks": [
+            {
+              "Network": "UNET",
+              "DistributorPriceCategory": [ "WRNLU", "WRNSU", "WRUL", "WRUS", "WRCL",
+              "WRCS", "WRNLC", "WRNSC" ]
+            },{
+              "Network": "VECT",
+              "DistributorPriceCategory": [ "ARNLU", "ARNSU", "ARUL", "ARUS", "ARCL", "ARCS",
+              "ARNLC", "ARNSC" ]
+            }
+          ]
+        },{
+          "TariffRegionId": "TR_UNET_WBSN",
+          "Networks": [
+            {
+              "Network": "UNET",
+              "DistributorPriceCategory": [ "WBSN" ]
+            }
+          ]
+        },{
+          "TariffRegionId": "TR_AKL_BUS",
+          "Networks": [
+            {
+              "Network": "UNET",
+              "DistributorPriceCategory": [ "WBSN" ]
+            },{
+              "Network": "VECT",
+              "DistributorPriceCategory": [ "ABSN" ]
+            }
+          ]
+        },{
+          "TariffRegionId": "TR_VECT_ABSN",
+          "Networks": [
+            {
+              "Network": "VECT",
+              "DistributorPriceCategory": [ "ABSN" ]
+            }
+          ]
+        },{
+          "TariffRegionId": "TR_CKHK_BUS",
+          "Networks": [
+            {
+              "Network": "CKHK",
+              "DistributorPriceCategory": [ "GLV69" ]
+            }
+          ]
+        }
+      ],
+      "TariffTypes": [
+        {
+          "TariffTypeId": "TT_UC_UNCI",
+          "Description": "Uncontrolled Usage Charge",
+          "FixedVariable": "V",
+          "Unit": "kWh",
+          "FlowDirection": "X",
+          "RCC-POA": [ [ "UN", 24 ], [ "IN", 24 ] ]
+        },{
+          "TariffTypeId": "TT_UC_AIC",
+          "Description": "All-Inclusive Usage Charge",
+          "FixedVariable": "V",
+          "Unit": "kWh",
+          "FlowDirection": "X",
+          "RCC-POA": [ [ "UN", 24 ], [ "IN", 24 ], [ "CN", 20 ] ]
+        },{
+          "TariffTypeId": "TT_UC_CTL",
+          "Description": "Controlled Usage Charge",
+          "FixedVariable": "V",
+          "Unit": "kWh",
+          "FlowDirection": "X",
+          "RCC-POA": [ [ "CN", 20 ] ]
+        },{
+          "TariffTypeId": "TT_FDC",
+          "Description": "Fixed Daily Charge",
+          "FixedVariable": "F",
+          "Unit": "day"
+        },{
+          "TariffTypeId": "TT_CAP_CHG",
+          "Description": "Capacity Charge",
+          "FixedVariable": "F",
+          "Unit": "kVa",
+          "FlowDirection": "B"
+        }
+      ],
+      "CustomerGroups": [
+        {
+          "CustomerGroup": "Residential",
+          "AttributeIds": [ "AT_anzsic_1", "AT_bdl_gas_onl", "AT_crd_chk" ],
+          "Plans": [
+            {
+              "Plan": "ASRL_RLU_GAS",
+              "Description": "Residential low user plan with gas",
+              "LowFixedCharge": "Y",
+              "AttributeIds": [ "AT_dsc_gas_10", "AT_mtr_typ_nhh" ],
+              "Tariffs": [
+                {
+                  "Tariff": "UC_RLU_AKL_UNC",
+                  "Rate": 0.2722,
+                  "TariffRegion": "TR_AKL_U",
+                  "TariffType": "TT_UC_UNCI"
+                },{
+                  "Tariff": "UC_RLU_AKL_CTL",
+                  "Rate": 0.2558,
+                  "TariffRegion": "TR_AKL_C",
+                  "TariffType": "TT_UC_CTL"
+                },{
+                  "Tariff": "FDC_RLU_NI",
+                  "Rate": 3.0261,
+                  "TariffRegion": "TR_NI",
+                  "TariffType": "TT_FDC"
+                },{
+                  "Tariff": "UC_RLU_CKHK_UNC",
+                  "Rate": 0.2521,
+                  "TariffRegion": "TR_CKHK",
+                  "TariffType": "TT_UC_UNCI"
+                },{
+                  "Tariff": "UC_RLU_CKHK_CTL",
+                  "Rate": 0.1843,
+                  "TariffRegion": "TR_CKHK",
+                  "TariffType": "TT_UC_CTL"
+                }
+              ]
+            },{
+              "Plan": "ASRL_RSU_GAS",
+              "Description": "Residential standard user plan with gas",
+              "LowFixedCharge": "N",
+              "AttributeIds": [ "AT_dsc_gas_10", "AT_mtr_typ_nhh" ],
+              "Tariffs": [
+                {
+                  "Tariff": "UC_RSU_AKL_UNC",
+                  "Rate": 0.2722,
+                  "TariffRegion": "TR_AKL_U",
+                  "TariffType": "TT_UC_UNCI"
+                },{
+                  "Tariff": "UC_RSU_AKL_CTL",
+                  "Rate": 0.2558,
+                  "TariffRegion": "TR_AKL_C",
+                  "TariffType": "TT_UC_CTL"
+                },{
+                  "Tariff": "FDC_RSU_NI",
+                  "Rate": 3.0261,
+                  "TariffRegion": "TR_NI",
+                  "TariffType": "TT_FDC"
+                },{
+                  "Tariff": "UC_RSU_CKHK_UNC",
+                  "Rate": 0.2521,
+                  "TariffRegion": "TR_CKHK",
+                  "TariffType": "TT_UC_UNCI"
+                },{
+                  "Tariff": "UC_RSU_CKHK_CTL",
+                  "Rate": 0.1843,
+                  "TariffRegion": "TR_CKHK",
+                  "TariffType": "TT_UC_CTL"
+                }
+              ]
+            }
+          ]
+        },{
+          "CustomerGroup": "Commercial",
+          "AttributeIds": [ "AT_anzsic_4", "AT_bdl_gas_onl", "AT_crd_chk" ],
+          "Plans": [
+            {
+              "Plan": "ASRL_COM_GAS",
+              "Description": "Commercial user plan",
+              "LowFixedCharge": "N",
+              "AttributeIds": [ "AT_dsc_gas_10", "AT_mtr_typ_nhh" ],
+              "Tariffs": [
+                {
+                  "Tariff": "UC_BUS_UNET",
+                  "Rate": 0.2528,
+                  "TariffRegion": "TR_UNET_WBSN",
+                  "TariffType": "TT_UC_AIC"
+                },{
+                  "Tariff": "FDC_BUS_AKL",
+                  "Rate": 3.2380,
+                  "TariffRegion": "TR_AKL_BUS",
+                  "TariffType": "TT_FDC"
+                },{
+                  "Tariff": "UC_BUS_VECT",
+                  "Rate": 0.2496,
+                  "TariffRegion": "TR_VECT_ABSN",
+                  "TariffType": "TT_UC_AIC"
+                },{
+                  "Tariff": "CAP_CHG_AKL",
+                  "Rate": 0.0413,
+                  "TariffRegion": "TR_AKL_BUS",
+                  "TariffType": "TT_CAP_CHG"
+                },{
+                  "Tariff": "UC_BUS_CKHK",
+                  "Rate": 0.2178,
+                  "TariffRegion": "TR_CKHK_GLV69",
+                  "TariffType": "TT_UC_AIC"
+                },{
+                  "Tariff": "FDC_BUS_CKHK",
+                  "Rate": 4.9770,
+                  "TariffRegion": "TR_CKHK_BUS",
+                  "TariffType": "TT_FDC"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

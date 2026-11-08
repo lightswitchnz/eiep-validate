@@ -1,0 +1,161 @@
+{
+  "FileType": "PRCSCHD",
+  "Version": 2.011,
+  "Sender": "ASRL",
+  "SentOnBehalfOf": "ASRL",
+  "Recipient": "ANY",
+  "RunDateTime": "2016-05-22T12:23:45+12",
+  "ExtractDateTime": "2016-05-22T12:23:45+12",
+  "Uniquifier": "c7d90f3a-d62b-4923-95c4-4aef120d831e",
+  "RecordCount": 8,
+  "UtilType": "E",
+  "FileStatus": "I",
+  "Retailers": [
+    {
+      "TraderId": "ASRL",
+      "RetailerId": "ASRL",
+      "RetailerBrandName": "Simple Retailer Ltd",
+      "Attributes": [
+        {
+          "AttributeId": "AT_anzsic_000000",
+          "Attribute": "ANZSIC",
+          "TextValue": "000000"
+        },{
+          "AttributeId": "AT_RATES_START_20250401",
+          "Attribute": "TARIFF_START_DATE",
+          "DateValue": "2025-04-01"
+        },{
+          "AttributeId": "AT_RATES_END_20250331",
+          "Attribute": "TARIFF_END_DATE",
+          "DateValue": "2025-04-31"
+        }
+      ],
+      "TariffRegions": [
+        {
+          "TariffRegionId": "TR_CKHK_RSU",
+          "Networks": [
+            {
+              "Network": "CKHK",
+              "DistributorPriceCategory": [ "RSU" ]
+            }
+          ]
+        },{
+          "TariffRegionId": "TR_CKHK_RLU",
+          "Networks": [
+            {
+              "Network": "CKHK",
+              "DistributorPriceCategory": [ "RLU" ]
+            }
+          ]
+        }
+      ],
+      "TariffTypes": [
+        {
+          "TariffTypeId": "TT_dly_sup_chg",
+          "Description": "Daily supply charge",
+          "FixedVariable": "F",
+          "Unit": "Day",
+          "FlowDirection": "B"
+        },{
+          "TariffTypeId": "TT_any",
+          "Description": "Anytime",
+          "FixedVariable": "V",
+          "Unit": "kWh",
+          "FlowDirection": "X",
+          "RCC-POA": [ [ "UN", 24 ] ]
+        },{
+          "TariffTypeId": "TT_aic",
+          "Description": "All inclusive",
+          "FixedVariable": "V",
+          "Unit": "kWh",
+          "FlowDirection": "X",
+          "RCC-POA": [ [ "IN", 17 ] ]
+        },{
+          "TariffTypeId": "TT_ctl_hwt",
+          "Description": "Controlled - hot water",
+          "FixedVariable": "V",
+          "Unit": "kWh",
+          "FlowDirection": "X",
+          "RCC-POA": [ [ "CN", 19 ] ]
+        }
+      ],
+      "CustomerGroups": [
+        {
+          "CustomerGroup": "General domestic",
+          "AttributeIds": [ "AT_anzsic_000000" ],
+          "Plans": [
+            {
+              "Plan": "PRSU",
+              "Description": "Residential - standard user",
+              "LowFixedCharge": "N",
+              "Tariffs": [
+                {
+                  "Tariff": "RSU-FIXED",
+                  "Rate": 2.0530,
+                  "TariffRegion": "TR_CKHK_RSU",
+                  "TariffType": "TT_dly_sup_chg",
+                  "AttributeIds": [ "AT_RATES_END_20250331" ]
+                },{
+                  "Tariff": "RSU-FIXED",
+                  "Rate": 2.1560,
+                  "TariffRegion": "TR_CKHK_RSU",
+                  "TariffType": "TT_dly_sup_chg",
+                  "AttributeIds": [ "AT_RATES_START_20250401" ]
+                },{
+                  "Tariff": "RSU-24UN",
+                  "Rate": 0.1937,
+                  "TariffRegion": "TR_CKHK_RSU",
+                  "TariffType": "TT_any"
+                },{
+                  "Tariff": "RSU-AICO",
+                  "Rate": 0.1737,
+                  "TariffRegion": "TR_CKHK_RSU",
+                  "TariffType": "TT_aic"
+                },{
+                  "Tariff": "RLU-CTRL",
+                  "Rate": 0.1537,
+                  "TariffRegion": "TR_CKHK_RSU",
+                  "TariffType": "TT_ctl_hwt"
+                }
+              ]
+            },{
+              "Plan": "PRLU",
+              "Description": "Residential - low user",
+              "LowFixedCharge": "Y",
+              "Tariffs": [
+                {
+                  "Tariff": "RLU-FIXED",
+                  "Rate": 1.3333,
+                  "TariffRegion": "TR_CKHK_RLU",
+                  "TariffType": "TT_dly_sup_chg",
+                  "AttributeIds": [ "AT_RATES_END_20250331" ]
+                },{
+                  "Tariff": "RLU-FIXED",
+                  "Rate": 1.4432,
+                  "TariffRegion": "TR_CKHK_RLU",
+                  "TariffType": "TT_dly_sup_chg",
+                  "AttributeIds": [ "AT_RATES_START_20250401" ]
+                },{
+                  "Tariff": "RLU-24UN",
+                  "Rate": 0.2768,
+                  "TariffRegion": "TR_CKHK_RLU",
+                  "TariffType": "TT_any"
+                },{
+                  "Tariff": "RLU-AICO",
+                  "Rate": 0.2568,
+                  "TariffRegion": "TR_CKHK_RLU",
+                  "TariffType": "TT_aic"
+                },{
+                  "Tariff": "RLU-CTRL-1",
+                  "Rate": 0.2368,
+                  "TariffRegion": "TR_CKHK_RLU",
+                  "TariffType": "TT_ctl_hwt"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

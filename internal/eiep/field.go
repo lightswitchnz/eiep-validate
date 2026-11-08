@@ -34,6 +34,8 @@ type Field struct {
 	Required bool
 	Codes    []string
 	Hint     string
+	// JSON is the field's element name in JSON files.
+	JSON string
 }
 
 type Problem struct {

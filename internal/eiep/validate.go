@@ -2,6 +2,7 @@
 package eiep
 
 import (
+	"bytes"
 	"fmt"
 	"regexp"
 	"sort"
@@ -44,12 +45,23 @@ type File struct {
 	Header  []string
 	Records []Record
 	Lines   int
+	JSON    bool
 }
 
 type Record struct {
 	Line int
 	Type string
 	V    []string
+	// At locates fields by name in a JSON file.
+	At map[string]jpos
+}
+
+// finding reports a problem in the named field of r.
+func (r Record) finding(field, code, msg string) Finding {
+	if l, ok := r.At[field]; ok {
+		return Finding{l.line, l.path, code, msg}
+	}
+	return Finding{r.Line, field, code, msg}
 }
 
 type Finding struct {
@@ -69,10 +81,13 @@ func Validate(data []byte) []Finding {
 var collapsed = map[string]string{
 	"extra_decimals":     "; %d more values in this field also have extra decimal places, up to line %d",
 	"extra_empty_fields": "; %d more records also have empty trailing fields, up to line %d",
+	"json_alias":         "; %d more elements also use this name, up to line %d",
 }
 
+var jsonIndex = regexp.MustCompile(`\[[0-9]+\]`)
+
 // warningCodes are findings that do not make a file invalid.
-var warningCodes = map[string]bool{"extra_decimals": true, "leading_zeros": true, "edge_spaces": true, "duplicate_plan": true, "too_long": true, "extra_empty_fields": true, "shared_description": true, "duplicate_description": true, "deprecated": true}
+var warningCodes = map[string]bool{"extra_decimals": true, "leading_zeros": true, "edge_spaces": true, "duplicate_plan": true, "too_long": true, "extra_empty_fields": true, "shared_description": true, "duplicate_description": true, "deprecated": true, "json_alias": true}
 
 type Result struct {
 	Findings []Finding
@@ -84,6 +99,9 @@ type Result struct {
 }
 
 func Check(data []byte) Result {
+	if t := bytes.TrimSpace(data); len(t) > 0 && t[0] == '{' {
+		return checkJSON(data)
+	}
 	records := recordSep.Split(string(data), -1)
 	if records[len(records)-1] == "" {
 		records = records[:len(records)-1]
@@ -155,7 +173,7 @@ func Check(data []byte) Result {
 			// Keep the record's place in the file's structure.
 			typ, _, _ := strings.Cut(rec, ",")
 			if _, ok := layout.Records[strings.ToUpper(typ)]; ok {
-				recs = append(recs, Record{line, strings.ToUpper(typ), nil})
+				recs = append(recs, Record{line, strings.ToUpper(typ), nil, nil})
 			}
 			continue
 		}
@@ -170,7 +188,7 @@ func Check(data []byte) Result {
 			continue
 		}
 		v = layout.trimEmpty(typ, fs, v, line, add)
-		recs = append(recs, Record{line, typ, v})
+		recs = append(recs, Record{line, typ, v, nil})
 		fs = layout.fields(typ, fs, len(v))
 		if len(v) != len(fs) {
 			out = append(out, Finding{line, "", "field_count", fieldCountMsg(typ+" record", v, fs, layout.Quoted)})
@@ -179,7 +197,7 @@ func Check(data []byte) Result {
 		add(line, layout.checkRecord(typ, fs, v))
 	}
 
-	f := File{hdr, recs, len(records)}
+	f := File{hdr, recs, len(records), false}
 	if hdrOK && layout.CheckFile != nil {
 		out = append(out, layout.CheckFile(f)...)
 	}
@@ -197,11 +215,11 @@ func (l Layout) checkRecord(typ string, fs []Field, v []string) []Problem {
 func finish(out []Finding, name string, layout Layout, f File) Result {
 	sort.SliceStable(out, func(i, j int) bool { return out[i].Line < out[j].Line })
 	r := Result{Format: name}
-	// Extra decimals usually affect a whole column, so report one warning per field.
+	// Extra decimals usually affect a whole column, so report one warning per field (or JSON element).
 	first, more, last := map[string]int{}, map[string]int{}, map[string]int{}
 	for _, f := range out {
 		if collapsed[f.Code] != "" {
-			k := f.Code + "|" + f.Field
+			k := f.Code + "|" + jsonIndex.ReplaceAllString(f.Field, "[]")
 			if _, ok := first[k]; ok {
 				more[k]++
 				last[k] = f.Line

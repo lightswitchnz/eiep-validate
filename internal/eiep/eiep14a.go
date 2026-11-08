@@ -25,17 +25,17 @@ const hdrRecordCount = 9
 
 var eiep14aHeader = []Field{
 	{Name: "Header record type", Kind: Char, Len: 3, Required: true, Codes: []string{"HDR"}},
-	{Name: "File type", Kind: Char, Len: 7, Required: true, Codes: []string{"PRCSCHD"}},
-	{Name: "Version", Kind: Num, Len: 6, Dec: 3, Required: true},
-	{Name: "Sender", Kind: Char, Len: 20, Required: true, Hint: "participant identifier if the sender is a participant"},
-	{Name: "Sent on behalf of", Kind: Char, Len: 4, Required: true, Hint: "participant identifier of the party the data is provided for"},
-	{Name: "Recipient", Kind: Char, Len: 4, Hint: "party code, ANY for multiple recipients, or blank if none is assigned"},
-	{Name: "Report run date and time", Kind: ISODateTime, Required: true},
-	{Name: "Data extract date and time", Kind: ISODateTime},
-	{Name: "Unique file identifier", Kind: UUID, Required: true},
-	{Name: "Number of detailed records", Kind: Num, Len: 8, Required: true, Hint: "the number of lines in the file after the header"},
-	{Name: "Utility type", Kind: Char, Len: 1, Required: true, Codes: []string{"E", "G"}, Hint: "E = electricity"},
-	{Name: "File status", Kind: Char, Len: 1, Required: true, Codes: []string{"I", "R", "X"}, Hint: "I = initial, R = replacement, X = replaces only the tariffs in this file"},
+	{Name: "File type", Kind: Char, Len: 7, Required: true, Codes: []string{"PRCSCHD"}, JSON: "FileType"},
+	{Name: "Version", Kind: Num, Len: 6, Dec: 3, Required: true, JSON: "Version"},
+	{Name: "Sender", Kind: Char, Len: 20, Required: true, Hint: "participant identifier if the sender is a participant", JSON: "Sender"},
+	{Name: "Sent on behalf of", Kind: Char, Len: 4, Required: true, Hint: "participant identifier of the party the data is provided for", JSON: "SentOnBehalfOf"},
+	{Name: "Recipient", Kind: Char, Len: 4, Hint: "party code, ANY for multiple recipients, or blank if none is assigned", JSON: "Recipient"},
+	{Name: "Report run date and time", Kind: ISODateTime, Required: true, JSON: "RunDateTime"},
+	{Name: "Data extract date and time", Kind: ISODateTime, JSON: "ExtractDateTime"},
+	{Name: "Unique file identifier", Kind: UUID, Required: true, JSON: "Uniquifier"},
+	{Name: "Number of detailed records", Kind: Num, Len: 8, Required: true, Hint: "the number of lines in the file after the header", JSON: "RecordCount"},
+	{Name: "Utility type", Kind: Char, Len: 1, Required: true, Codes: []string{"E", "G"}, Hint: "E = electricity", JSON: "UtilType"},
+	{Name: "File status", Kind: Char, Len: 1, Required: true, Codes: []string{"I", "R", "X"}, Hint: "I = initial, R = replacement, X = replaces only the tariffs in this file", JSON: "FileStatus"},
 }
 
 func recordType(name string) Field {
@@ -43,80 +43,95 @@ func recordType(name string) Field {
 }
 
 func attributeIDs(n int) Field {
-	return Field{Name: "Attribute identifiers", Kind: IdentList, Len: n, Hint: "ATTRIBUTE identifiers separated by spaces"}
+	return Field{Name: "Attribute identifiers", Kind: IdentList, Len: n, Hint: "ATTRIBUTE identifiers separated by spaces", JSON: "AttributeIds"}
 }
 
 var eiep14aRecords = map[string][]Field{
 	"RETAILER": {
 		recordType("RETAILER"),
-		{Name: "Trader participant identifier", Kind: Char, Len: 4, Hint: "mandatory if the Authority has assigned one"},
-		{Name: "Retailer participant identifier", Kind: Char, Len: 4},
-		{Name: "Retailer name", Kind: Char, Len: 50, Required: true, Hint: "brand name"},
+		{Name: "Trader participant identifier", Kind: Char, Len: 4, Hint: "mandatory if the Authority has assigned one", JSON: "TraderId"},
+		{Name: "Retailer participant identifier", Kind: Char, Len: 4, JSON: "RetailerId"},
+		{Name: "Retailer name", Kind: Char, Len: 50, Required: true, Hint: "brand name", JSON: "RetailerBrandName"},
 	},
 	"ATTRIBUTE": {
 		recordType("ATTRIBUTE"),
-		{Name: "Attribute record identifier", Kind: Ident, Len: 20, Required: true},
-		{Name: "Attribute code", Kind: Char, Len: 50, Hint: "e.g. ANZSIC, KVA_MAX, EXIT_FEE"},
-		{Name: "Date value", Kind: ISODate},
-		{Name: "Numerical value", Kind: Num, Len: 28, Dec: 8},
-		{Name: "Text value", Kind: Char, Len: 50},
-		{Name: "Description", Kind: Char, Len: 1000},
+		{Name: "Attribute record identifier", Kind: Ident, Len: 20, Required: true, JSON: "AttributeId"},
+		{Name: "Attribute code", Kind: Char, Len: 50, Hint: "e.g. ANZSIC, KVA_MAX, EXIT_FEE", JSON: "Attribute"},
+		{Name: "Date value", Kind: ISODate, JSON: "DateValue"},
+		{Name: "Numerical value", Kind: Num, Len: 28, Dec: 8, JSON: "NumValue"},
+		{Name: "Text value", Kind: Char, Len: 50, JSON: "TextValue"},
+		{Name: "Description", Kind: Char, Len: 1000, JSON: "Description"},
 	},
 	"SCHEDULE": {
 		recordType("SCHEDULE"),
-		{Name: "Schedule record identifier", Kind: Ident, Len: 20, Required: true},
-		{Name: "Daylight savings adjustment", Kind: Char, Len: 1, Codes: []string{"1", "2"}, Hint: "1 = UTC+13 while daylight saving is in operation, 2 = always UTC+12"},
-		{Name: "Start time", Kind: Clock},
-		{Name: "End time", Kind: Clock},
-		{Name: "Day type", Kind: Char, Len: 50},
-		{Name: "Month", Kind: Char, Len: 50},
+		{Name: "Schedule record identifier", Kind: Ident, Len: 20, Required: true, JSON: "ScheduleId"},
+		{Name: "Daylight savings adjustment", Kind: Char, Len: 1, Codes: []string{"1", "2"}, Hint: "1 = UTC+13 while daylight saving is in operation, 2 = always UTC+12", JSON: "DaylightSavings"},
+		{Name: "Start time", Kind: Clock, JSON: "StartTime"},
+		{Name: "End time", Kind: Clock, JSON: "EndTime"},
+		{Name: "Day type", Kind: Char, Len: 50, JSON: "DayType"},
+		{Name: "Month", Kind: Char, Len: 50, JSON: "Month"},
 	},
 	"TARIFFTYPE": {
 		recordType("TARIFFTYPE"),
-		{Name: "Tariff type identifier", Kind: Ident, Len: 20, Required: true},
-		{Name: "Tariff name", Kind: Char, Len: 50, Required: true},
-		{Name: "Fixed / variable", Kind: Char, Len: 1, Required: true, Codes: []string{"F", "V"}, Hint: "F = fixed, V = variable"},
-		{Name: "Unit type", Kind: Char, Len: 25, Hint: "e.g. Day, kWh, kVA"},
-		{Name: "Flow direction", Kind: Char, Len: 1, Codes: []string{"X", "I", "B"}, Hint: "X = consumption, I = generation, B = both"},
-		{Name: "RCC-POA", Kind: Char, Len: 50},
-		{Name: "Schedule identifiers", Kind: IdentList, Len: 200, Hint: "SCHEDULE identifiers separated by spaces"},
+		{Name: "Tariff type identifier", Kind: Ident, Len: 20, Required: true, JSON: "TariffTypeId"},
+		{Name: "Tariff name", Kind: Char, Len: 50, Required: true, JSON: "Description"},
+		{Name: "Fixed / variable", Kind: Char, Len: 1, Required: true, Codes: []string{"F", "V"}, Hint: "F = fixed, V = variable", JSON: "FixedVariable"},
+		{Name: "Unit type", Kind: Char, Len: 25, Hint: "e.g. Day, kWh, kVA", JSON: "Unit"},
+		{Name: "Flow direction", Kind: Char, Len: 1, Codes: []string{"X", "I", "B"}, Hint: "X = consumption, I = generation, B = both", JSON: "FlowDirection"},
+		{Name: "RCC-POA", Kind: Char, Len: 50, JSON: "RCC-POA"},
+		{Name: "Schedule identifiers", Kind: IdentList, Len: 200, Hint: "SCHEDULE identifiers separated by spaces", JSON: "ScheduleIds"},
 		attributeIDs(256),
 	},
 	"TARIFFREGION": {
 		recordType("TARIFFREGION"),
-		{Name: "Tariff region identifier", Kind: Ident, Len: 20, Required: true},
-		{Name: "Description", Kind: Char, Len: 50},
+		{Name: "Tariff region identifier", Kind: Ident, Len: 20, Required: true, JSON: "TariffRegionId"},
+		{Name: "Description", Kind: Char, Len: 50, JSON: "Description"},
 	},
 	"NETWORK": {
 		recordType("NETWORK"),
-		{Name: "Distributor participant identifier", Kind: Char, Len: 4},
-		{Name: "NSP", Kind: Char, Len: 200},
-		{Name: "Distributor price category code", Kind: Char, Len: 200},
-		{Name: "Distributor loss category code", Kind: Char, Len: 50},
+		{Name: "Distributor participant identifier", Kind: Char, Len: 4, JSON: "Network"},
+		{Name: "NSP", Kind: Char, Len: 200, JSON: "NSP"},
+		{Name: "Distributor price category code", Kind: Char, Len: 200, JSON: "DistributorPriceCategory"},
+		{Name: "Distributor loss category code", Kind: Char, Len: 50, JSON: "DistributorLossCategory"},
 	},
 	"CUSTOMER": {
 		recordType("CUSTOMER"),
-		{Name: "Customer text", Kind: Char, Len: 1000},
+		{Name: "Customer text", Kind: Char, Len: 1000, JSON: "CustomerGroup"},
 		attributeIDs(200),
 	},
 	"PLAN": {
 		recordType("PLAN"),
-		{Name: "Product identification code", Kind: Char, Len: 32, Required: true},
-		{Name: "Plan description", Kind: Char, Len: 50, Required: true, Hint: "unique across all retailers' plans"},
-		{Name: "Start date", Kind: ISODate},
-		{Name: "End date", Kind: ISODate},
-		{Name: "Close date", Kind: ISODate},
-		{Name: "Low fixed charge", Kind: Char, Len: 1, Required: true, Codes: []string{"Y", "N"}},
+		{Name: "Product identification code", Kind: Char, Len: 32, Required: true, JSON: "PlanId"},
+		{Name: "Plan description", Kind: Char, Len: 50, Required: true, Hint: "unique across all retailers' plans", JSON: "Description"},
+		{Name: "Start date", Kind: ISODate, JSON: "StartDate"},
+		{Name: "End date", Kind: ISODate, JSON: "EndDate"},
+		{Name: "Close date", Kind: ISODate, JSON: "CloseDate"},
+		{Name: "Low fixed charge", Kind: Char, Len: 1, Required: true, Codes: []string{"Y", "N"}, JSON: "LowFixedCharge"},
 		attributeIDs(256),
 	},
 	"TARIFF": {
 		recordType("TARIFF"),
-		{Name: "Tariff identifier", Kind: Char, Len: 50},
-		{Name: "Tariff region identifier", Kind: Ident, Len: 20, Hint: "blank if the rate is common across all networks"},
-		{Name: "Tariff type identifier", Kind: Ident, Len: 20, Required: true},
-		{Name: "Tariff rate", Kind: Num, Len: 12, Dec: 6, Required: true},
+		{Name: "Tariff identifier", Kind: Char, Len: 50, JSON: "Tariff"},
+		{Name: "Tariff region identifier", Kind: Ident, Len: 20, Hint: "blank if the rate is common across all networks", JSON: "TariffRegionId"},
+		{Name: "Tariff type identifier", Kind: Ident, Len: 20, Required: true, JSON: "TariffTypeId"},
+		{Name: "Tariff rate", Kind: Num, Len: 12, Dec: 6, Required: true, JSON: "Rate"},
 		attributeIDs(256),
 	},
+}
+
+// jsonChildren lists the JSON arrays holding each record type's child records, in CSV order.
+var jsonChildren = map[string][]struct{ key, typ string }{
+	"HDR":          {{"Retailers", "RETAILER"}},
+	"RETAILER":     {{"Attributes", "ATTRIBUTE"}, {"Schedules", "SCHEDULE"}, {"TariffTypes", "TARIFFTYPE"}, {"TariffRegions", "TARIFFREGION"}, {"CustomerGroups", "CUSTOMER"}},
+	"TARIFFREGION": {{"Networks", "NETWORK"}},
+	"CUSTOMER":     {{"Plans", "PLAN"}},
+	"PLAN":         {{"Tariffs", "TARIFF"}},
+}
+
+// jsonAliases are element names used by the spec's JSON examples instead of those in its tables.
+var jsonAliases = map[string]map[string]string{
+	"PLAN":   {"Plan": "PlanId"},
+	"TARIFF": {"TariffRegion": "TariffRegionId", "TariffType": "TariffTypeId"},
 }
 
 var (
@@ -236,7 +251,15 @@ var references = []struct {
 func checkEIEP14AFile(f File) []Finding {
 	var out []Finding
 	want, what := f.Lines-1, "lines after the header"
-	if n, err := strconv.Atoi(f.Header[hdrRecordCount]); err == nil && n != want && n != f.Lines {
+	if f.JSON {
+		want, what = 0, "tariffs"
+		for _, r := range f.Records {
+			if r.Type == "TARIFF" {
+				want++
+			}
+		}
+	}
+	if n, err := strconv.Atoi(f.Header[hdrRecordCount]); err == nil && n != want && (f.JSON || n != f.Lines) {
 		out = append(out, Finding{1, eiep14aHeader[hdrRecordCount].Name, "count_mismatch", fmt.Sprintf("declares %d but the file has %d %s; set it to %d", n, want, what, want)})
 	}
 	if len(f.Records) == 0 {
@@ -246,7 +269,7 @@ func checkEIEP14AFile(f File) []Finding {
 	var retailers [][]Record
 	var prev string
 	var customer, plan bool
-	structure := func(r Record, msg string) { out = append(out, Finding{r.Line, "", "structure", msg}) }
+	structure := func(r Record, msg string) { out = append(out, r.finding("", "structure", msg)) }
 	for _, r := range f.Records {
 		if r.Type == "RETAILER" {
 			retailers = append(retailers, nil)
@@ -313,7 +336,7 @@ func checkRetailer(recs []Record, descriptions map[string][]planKey) []Finding {
 		}
 		id := strings.ToUpper(r.V[i])
 		if line, dup := ids[r.Type][id]; dup {
-			out = append(out, Finding{r.Line, eiep14aRecords[r.Type][i].Name, "duplicate_id", fmt.Sprintf("%q is already used by the %s record on line %d; identifiers must be unique within the retailer, so rename one of them", r.V[i], r.Type, line)})
+			out = append(out, r.finding(eiep14aRecords[r.Type][i].Name, "duplicate_id", fmt.Sprintf("%q is already used by the %s record on line %d; identifiers must be unique within the retailer, so rename one of them", r.V[i], r.Type, line)))
 			continue
 		}
 		ids[r.Type][id] = r.Line
@@ -327,7 +350,7 @@ func checkRetailer(recs []Record, descriptions map[string][]planKey) []Finding {
 			}
 			for _, id := range strings.Split(r.V[ref.field], " ") {
 				if _, ok := ids[ref.target][strings.ToUpper(id)]; !ok {
-					out = append(out, Finding{r.Line, eiep14aRecords[r.Type][ref.field].Name, "unknown_reference", fmt.Sprintf("%q does not match any %s record under this RETAILER; add one with that identifier, or correct the reference", id, ref.target)})
+					out = append(out, r.finding(eiep14aRecords[r.Type][ref.field].Name, "unknown_reference", fmt.Sprintf("%q does not match any %s record under this RETAILER; add one with that identifier, or correct the reference", id, ref.target)))
 				}
 			}
 		}
@@ -395,7 +418,7 @@ func checkPlanDescriptions(recs []Record, valid func(Record, int) bool, descript
 		if len(earlier) == 0 {
 			continue
 		}
-		f := Finding{p.r.Line, "Plan description", "shared_description", fmt.Sprintf("%q is also used by the plan on line %d; the spec requires each plan's description to be unique across all retailers' plans", p.r.V[2], earlier[0].line)}
+		f := p.r.finding("Plan description", "shared_description", fmt.Sprintf("%q is also used by the plan on line %d; the spec requires each plan's description to be unique across all retailers' plans", p.r.V[2], earlier[0].line))
 		for _, e := range earlier {
 			if e.key == key {
 				f.Code, f.Msg = "duplicate_description", fmt.Sprintf("%q is already used by the plan on line %d with the same start date and networks; each plan's description must be unique across all retailers' plans", p.r.V[2], e.line)
