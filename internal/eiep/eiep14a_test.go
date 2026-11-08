@@ -53,6 +53,7 @@ func TestEIEP14A(t *testing.T) {
 		want []at
 	}{
 		{"valid", doc14(nil), nil},
+		{"valid count excluding header", strings.Replace(doc14(nil), ",14,E", ",13,E", 1), nil},
 		{"valid CRLF", strings.ReplaceAll(doc14(nil), "\n", "\r\n"), nil},
 		{"valid version 2.0", doc14(map[int]string{1: strings.Replace(base14[0], "2.011", "2.0", 1)}), nil},
 		{"valid quoted comma", doc14(map[int]string{2: `RETAILER,ASRL,ASRL,"Simple Retailer, ""Ltd"""`}), nil},
@@ -63,7 +64,7 @@ func TestEIEP14A(t *testing.T) {
 		{"valid all networks", doc14(map[int]string{14: "TARIFF,RSU-24UN,,TT_any,0.1937,"}), nil},
 		{"valid second retailer", doc14(nil, "RETAILER,BRTL,,Other", "TARIFFTYPE,TT_any,Anytime,V,kWh,X,,,", "CUSTOMER,,", "PLAN,PRSU,Other plan,,,,N,", "TARIFF,,,TT_any,0.2,"), nil},
 
-		{"unsupported version", doc14(map[int]string{1: strings.Replace(base14[0], "2.011", "1.0", 1)}), []at{{1, "Version"}}},
+		{"unsupported version", doc14(map[int]string{1: strings.Replace(base14[0], "2.011", "3.0", 1)}), []at{{1, "Version"}}},
 		{"count mismatch", strings.Replace(doc14(nil), ",14,E", ",26,E", 1), []at{{1, "Number of detailed records"}}},
 		{"run date without offset", doc14(map[int]string{1: strings.Replace(base14[0], "+12", "", 1)}), []at{{1, "Report run date and time"}}},
 		{"bad UUID", doc14(map[int]string{1: strings.Replace(base14[0], "c7d90f3a-", "c7d90f3a", 1)}), []at{{1, "Unique file identifier"}}},
@@ -78,7 +79,6 @@ func TestEIEP14A(t *testing.T) {
 		{"identifier with space", doc14(map[int]string{3: "ATTRIBUTE,AT anzsic,ANZSIC,,,000000,"}), []at{{3, "Attribute record identifier"}, {11, "Attribute identifiers"}}},
 		{"double space in list", doc14(map[int]string{11: "CUSTOMER,General domestic,AT_anzsic_000000  AT_START_20250401"}), []at{{11, "Attribute identifiers"}}},
 		{"comma list", doc14(map[int]string{11: `CUSTOMER,General domestic,"AT_anzsic_000000,AT_START_20250401"`}), []at{{11, "Attribute identifiers"}}},
-		{"rate too many decimals", doc14(map[int]string{14: "TARIFF,RSU-24UN,TR_CKHK_RSU,TT_any,0.1234567,"}), []at{{14, "Tariff rate"}}},
 		{"rate too many digits", doc14(map[int]string{14: "TARIFF,RSU-24UN,TR_CKHK_RSU,TT_any,1234567,"}), []at{{14, "Tariff rate"}}},
 		{"bad fixed/variable", doc14(map[int]string{9: "TARIFFTYPE,TT_dly_sup_chg,Daily supply charge,X,Day,B,,,"}), []at{{9, "Fixed / variable"}}},
 		{"bad RCC-POA", doc14(map[int]string{10: "TARIFFTYPE,TT_any,Anytime,V,kWh,X,UN24,SC_night,"}), []at{{10, "RCC-POA"}}},
@@ -101,7 +101,7 @@ func TestEIEP14A(t *testing.T) {
 		{"attribute after customer", doc14(nil, "ATTRIBUTE,AT_x,URL,,,,"), []at{{15, ""}}},
 		{"duplicate identifier", doc14(nil, "TARIFF,X,TR_CKHK_RSU,TT_any,1,", "TARIFFTYPE,tt_ANY,Anytime,V,kWh,X,,,"), []at{{16, ""}, {16, "Tariff type identifier"}}},
 		{"duplicate plan id", doc14(nil, "PLAN,prsu,Other,,,,N,"), []at{{15, "Product identification code"}}},
-		{"duplicate plan description across retailers", doc14(nil, "RETAILER,BRTL,,Other", "CUSTOMER,,", "PLAN,P2,residential - STANDARD user,,,,N,"), []at{{17, "Plan description"}}},
+		{"shared plan description, other networks", doc14(nil, "RETAILER,BRTL,,Other", "CUSTOMER,,", "PLAN,P2,residential - STANDARD user,,,,N,"), nil},
 		{"unknown tariff type", doc14(map[int]string{14: "TARIFF,RSU-24UN,TR_CKHK_RSU,TT_nope,0.1937,"}), []at{{14, "Tariff type identifier"}}},
 		{"unknown region", doc14(map[int]string{14: "TARIFF,RSU-24UN,TR_CKHK,TT_any,0.1937,"}), []at{{14, "Tariff region identifier"}}},
 		{"unknown schedule in list", doc14(map[int]string{10: "TARIFFTYPE,TT_any,Anytime,V,kWh,X,UN-24,SC_night SC_day,"}), []at{{10, "Schedule identifiers"}}},
@@ -124,7 +124,7 @@ func TestEIEP14AMessagesSuggestFix(t *testing.T) {
 	tests := []struct{ in, want string }{
 		{doc14(map[int]string{12: "PLAN,PRSU,Residential - standard user, 2016-04-01,,,N,"}), `write it as "2016-04-01"`},
 		{doc14(map[int]string{6: "SCHEDULE,SC_night,1,21.00,24:00,ANY,ANY"}), `write it as "21:00"`},
-		{strings.Replace(doc14(nil), ",14,E", ",26,E", 1), "set it to 14"},
+		{strings.Replace(doc14(nil), ",14,E", ",26,E", 1), "set it to 13"},
 		{doc14(map[int]string{14: "TARIFF,RSU-24UN,TR_CKHK_RSU,TT_nope,0.1937,"}), "does not match any TARIFFTYPE record under this RETAILER; add one"},
 		{doc14(map[int]string{2: `RETAILER,ASRL,ASRL,"Simple`}), "add the closing quote"},
 		{doc14(map[int]string{6: "SCHEDULE,SC_night,1,22:00,06:00,ANY,ANY"}), "split it into two SCHEDULE records"},

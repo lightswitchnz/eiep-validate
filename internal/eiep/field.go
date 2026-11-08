@@ -18,6 +18,7 @@ const (
 	ISODate     // YYYY-MM-DD
 	ISODateTime // YYYY-MM-DDTHH:MM:SS with a UTC offset
 	Clock       // HH:MM, 00:00 to 24:00
+	Time        // HH:MM:SS, 24-hour
 	UUID
 	Ident     // letters, digits and underscores
 	IdentList // Idents separated by single spaces
@@ -54,6 +55,7 @@ var (
 	dateTimeRe = regexp.MustCompile(`^[0-9]{2}/[0-9]{2}/[0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2}$`)
 	isoDateRe  = regexp.MustCompile(`^[0-9]{4}-[0-9]{2}-[0-9]{2}$`)
 	isoDTRe    = regexp.MustCompile(`^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(Z|[+-][0-9]{2}(:?[0-9]{2})?)$`)
+	timeRe     = regexp.MustCompile(`^[0-9]{2}:[0-9]{2}:[0-9]{2}$`)
 	clockRe    = regexp.MustCompile(`^([0-9]{2}):([0-9]{2})$`)
 	uuidRe     = regexp.MustCompile(`^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$`)
 	identRe    = regexp.MustCompile(`^[A-Za-z0-9_]+$`)
@@ -133,18 +135,23 @@ func (f Field) hint() string {
 }
 
 func (f Field) check(v string) (code, msg string) {
+	if (f.Kind == Char || f.Kind == Ident || f.Kind == IdentList) && len(v) > f.Len {
+		g := f
+		g.Len = len(v)
+		if code, msg = g.check(v); code != "" {
+			return code, msg
+		}
+		return "too_long", fmt.Sprintf("%q is %d characters; the spec allows at most %d%s", v, len(v), f.Len, f.hint())
+	}
 	switch f.Kind {
 	case Char:
-		if len(v) > f.Len {
-			return "too_long", fmt.Sprintf("%q is %d characters; shorten it to at most %d%s", v, len(v), f.Len, f.hint())
-		}
 		for i := 0; i < len(v); i++ {
 			if v[i] < 32 || v[i] > 126 {
 				return "bad_char", fmt.Sprintf("%q contains a disallowed character at position %d; use only printable ASCII (no tabs, accents or smart quotes)", v, i+1)
 			}
 		}
 		if strings.TrimSpace(v) != v {
-			return "spaces", fmt.Sprintf("%q has leading or trailing spaces; remove them", v)
+			return "edge_spaces", fmt.Sprintf("%q has leading or trailing spaces; remove them", v)
 		}
 		if len(f.Codes) > 0 && !foldIn(v, f.Codes) {
 			return "bad_code", fmt.Sprintf("%q is not a valid code; use one of %s%s", v, strings.Join(f.Codes, ", "), f.hint())
@@ -158,7 +165,18 @@ func (f Field) check(v string) (code, msg string) {
 		case strings.HasPrefix(strings.TrimPrefix(v, "-"), "."):
 			return "bad_number", fmt.Sprintf("%q has no digit before the decimal point; write a leading 0, e.g. %q", v, strings.Replace(v, ".", "0.", 1))
 		case leadZeroRe.MatchString(v):
-			return "bad_number", fmt.Sprintf("%q has leading zeros; remove them", v)
+			neg := strings.HasPrefix(v, "-")
+			t := strings.TrimLeft(strings.TrimPrefix(v, "-"), "0")
+			if t == "" || t[0] == '.' {
+				t = "0" + t
+			}
+			if neg {
+				t = "-" + t
+			}
+			if code, msg := f.check(t); code != "" {
+				return code, msg
+			}
+			return "leading_zeros", fmt.Sprintf("%q has leading zeros; write it as %q", v, t)
 		default:
 			return "bad_number", fmt.Sprintf("%q is not a number; use digits with an optional leading - and decimal point, e.g. 123.45 (no spaces, units or thousands separators)", v)
 		}
@@ -170,7 +188,7 @@ func (f Field) check(v string) (code, msg string) {
 				return "too_many_decimals", fmt.Sprintf("%q must be a whole number; remove the decimal part", v)
 			}
 			n, _ := strconv.ParseFloat(v, 64)
-			return "too_many_decimals", fmt.Sprintf("%q has %d decimal places; round it to at most %d, e.g. %q", v, dec, f.Dec, strconv.FormatFloat(n, 'f', f.Dec, 64))
+			return "extra_decimals", fmt.Sprintf("%q has %d decimal places; the spec allows at most %d, e.g. %q", v, dec, f.Dec, strconv.FormatFloat(n, 'f', f.Dec, 64))
 		}
 	case Date:
 		if _, err := parseDate(v); err != nil {
@@ -212,21 +230,19 @@ func (f Field) check(v string) (code, msg string) {
 			}
 			return "bad_time", msg
 		}
+	case Time:
+		if _, err := time.Parse("15:04:05", v); err != nil || !timeRe.MatchString(v) {
+			return "bad_time", fmt.Sprintf("%q is not a time in HH:MM:SS format (24-hour clock, seconds included)", v)
+		}
 	case UUID:
 		if !uuidRe.MatchString(v) {
 			return "bad_uuid", fmt.Sprintf("%q is not a UUID; use 36 characters, hex digits in 8-4-4-4-12 groups, e.g. \"a9d48b18-6b1e-439c-9d05-9b144543a96e\"", v)
 		}
 	case Ident:
-		if len(v) > f.Len {
-			return "too_long", fmt.Sprintf("%q is %d characters; shorten it to at most %d", v, len(v), f.Len)
-		}
 		if !identRe.MatchString(v) {
 			return "bad_identifier", fmt.Sprintf("%q may contain only letters, digits and underscores (no spaces or punctuation)", v)
 		}
 	case IdentList:
-		if len(v) > f.Len {
-			return "too_long", fmt.Sprintf("%q is %d characters; shorten it to at most %d", v, len(v), f.Len)
-		}
 		for _, id := range strings.Split(v, " ") {
 			if id == "" {
 				return "spaces", fmt.Sprintf("%q has leading, trailing or double spaces; separate identifiers with single spaces", v)
@@ -270,4 +286,12 @@ func names(fs []Field) string {
 		n[i] = f.Name
 	}
 	return strings.Join(n, ", ")
+}
+
+func expectedGot(fs []Field, v []string) string {
+	q := make([]string, len(v))
+	for i, s := range v {
+		q[i] = strconv.Quote(s)
+	}
+	return "\n  Expected: " + names(fs) + "\n  Got:      " + strings.Join(q, ", ")
 }

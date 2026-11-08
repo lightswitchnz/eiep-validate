@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"eiep-validate/internal/eiep"
@@ -16,6 +17,7 @@ const perKind = 3
 type fileFinding struct {
 	File string `json:"file"`
 	eiep.Finding
+	Warning bool `json:"warning,omitempty"`
 }
 
 type kind struct{ field, code string }
@@ -26,7 +28,7 @@ func main() {
 	flag.Usage = func() {
 		fmt.Fprintln(os.Stderr, "usage: eiep-validate [--json] [--all] FILE...")
 		fmt.Fprintln(os.Stderr, "Validates EIEP files strictly against the Electricity Authority spec.")
-		fmt.Fprintln(os.Stderr, "Exit status: 0 valid, 1 findings, 2 usage or read error.")
+		fmt.Fprintln(os.Stderr, "Exit status: 0 valid (warnings allowed), 1 findings, 2 usage or read error.")
 		flag.PrintDefaults()
 	}
 	flag.Parse()
@@ -51,11 +53,14 @@ func main() {
 		}
 		if *asJSON {
 			for _, f := range findings {
-				results = append(results, fileFinding{path, f})
+				results = append(results, fileFinding{path, f, false})
+			}
+			for _, f := range r.Warnings {
+				results = append(results, fileFinding{path, f, true})
 			}
 			continue
 		}
-		printText(path, r, *all)
+		printText(filepath.Base(path), r, *all)
 	}
 	if *asJSON {
 		enc := json.NewEncoder(os.Stdout)
@@ -66,19 +71,28 @@ func main() {
 }
 
 func printText(path string, r eiep.Result, all bool) {
-	findings := r.Findings
 	format := ""
 	if r.Format != "" {
 		format = cyan(r.Format) + ": "
 	}
-	if len(findings) == 0 {
+	printFindings(path, r.Warnings, all, yellow("warning")+": ", "warnings")
+	warned := ""
+	if n := len(r.Warnings); n > 0 {
+		warned = yellow(fmt.Sprintf(" (%d warnings)", n))
+	}
+	if len(r.Findings) == 0 {
 		head, rest, _ := strings.Cut(r.Summary, "\n")
-		fmt.Printf("%s: %s%s: %s\n", bold(path), format, green("valid"), head)
+		fmt.Printf("%s: %s%s%s: %s\n", bold(path), format, green("valid"), warned, head)
 		if rest != "" {
 			fmt.Println(paintLines(rest, registerLine))
 		}
 		return
 	}
+	printFindings(path, r.Findings, all, "", "problems")
+	fmt.Printf("%s: %s%s%s\n", bold(path), format, red(fmt.Sprintf("%d problems", len(r.Findings))), warned)
+}
+
+func printFindings(path string, findings []eiep.Finding, all bool, label, noun string) {
 	counts := map[kind]int{}
 	last := map[kind]int{}
 	var order []kind
@@ -94,9 +108,9 @@ func printText(path string, r eiep.Result, all bool) {
 		}
 		loc := bold(path) + cyan(fmt.Sprintf(":%d", f.Line))
 		if f.Field != "" {
-			fmt.Printf("%s: %s: %s\n", loc, yellow(f.Field), f.Msg)
+			fmt.Printf("%s: %s%s: %s\n", loc, label, yellow(f.Field), f.Msg)
 		} else {
-			fmt.Printf("%s: %s\n", loc, f.Msg)
+			fmt.Printf("%s: %s%s\n", loc, label, f.Msg)
 		}
 	}
 	for _, k := range order {
@@ -105,8 +119,7 @@ func printText(path string, r eiep.Result, all bool) {
 			if name == "" {
 				name = k.code
 			}
-			fmt.Printf("%s: %s\n", bold(path), dim(fmt.Sprintf("...and %d more %q problems like these, up to line %d (use --all to list them)", n, name, last[k])))
+			fmt.Printf("%s: %s\n", bold(path), dim(fmt.Sprintf("...and %d more %q %s like these, up to line %d (use --all to list them)", n, name, noun, last[k])))
 		}
 	}
-	fmt.Printf("%s: %s%s\n", bold(path), format, red(fmt.Sprintf("%d problems", len(findings))))
 }

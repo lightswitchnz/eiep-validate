@@ -10,9 +10,13 @@ import (
 
 // Layout is one version of one EIEP format.
 type Layout struct {
+	// Name overrides the format's name for this version.
+	Name   string
 	Header []Field
 	// Records holds the fields of each record type allowed after the header.
 	Records map[string][]Field
+	// Alt holds other accepted field lists per record type ("HDR" for the header), chosen by field count.
+	Alt map[string][][]Field
 	// Quoted allows RFC 4180 double-quoted fields.
 	Quoted bool
 	// CheckRecord replaces the plain per-field check of a record when set.
@@ -61,8 +65,18 @@ func Validate(data []byte) []Finding {
 	return Check(data).Findings
 }
 
+// collapsed are warnings reported once, with a count of the rest appended.
+var collapsed = map[string]string{
+	"extra_decimals":     "; %d more values in this field also have extra decimal places, up to line %d",
+	"extra_empty_fields": "; %d more records also have empty trailing fields, up to line %d",
+}
+
+// warningCodes are findings that do not make a file invalid.
+var warningCodes = map[string]bool{"extra_decimals": true, "leading_zeros": true, "edge_spaces": true, "duplicate_plan": true, "too_long": true, "extra_empty_fields": true, "shared_description": true, "duplicate_description": true, "deprecated": true}
+
 type Result struct {
 	Findings []Finding
+	Warnings []Finding
 	// Format is the detected format and declared version, e.g. "EIEP13A 1.4"; blank if unsupported.
 	Format string
 	// Summary describes the contents of a valid file.
@@ -108,19 +122,24 @@ func Check(data []byte) Result {
 	}
 
 	name := format.Name + " " + hdr[2]
+	if layout.Name != "" {
+		name = layout.Name + " " + hdr[2]
+	}
 	split := func(s string) ([]string, error) { return strings.Split(s, ","), nil }
 	if layout.Quoted {
 		split = splitQuoted
 	}
 	hdr, err := split(records[0])
-	hdrOK := err == nil && len(hdr) == len(layout.Header)
+	hdr = layout.trimEmpty("HDR", layout.Header, hdr, 1, add)
+	hfs := layout.fields("HDR", layout.Header, len(hdr))
+	hdrOK := err == nil && len(hdr) == len(hfs)
 	switch {
 	case err != nil:
 		out = append(out, Finding{1, "", "quoting", err.Error()})
 	case hdrOK:
-		add(1, checkFields(layout.Header, hdr))
+		add(1, checkFields(hfs, hdr))
 	default:
-		out = append(out, Finding{1, "", "field_count", fieldCountMsg("header", len(hdr), layout.Header, layout.Quoted)})
+		out = append(out, Finding{1, "", "field_count", fieldCountMsg("header", hdr, layout.Header, layout.Quoted)})
 	}
 
 	var recs []Record
@@ -150,28 +169,92 @@ func Check(data []byte) Result {
 			out = append(out, Finding{line, "", "structure", fmt.Sprintf("unknown record type %q; every row after the header must start with one of: %s", v[0], keys(layout.Records))})
 			continue
 		}
+		v = layout.trimEmpty(typ, fs, v, line, add)
 		recs = append(recs, Record{line, typ, v})
-		switch {
-		case len(v) != len(fs):
-			out = append(out, Finding{line, "", "field_count", fieldCountMsg(typ+" record", len(v), fs, layout.Quoted)})
-		case layout.CheckRecord != nil:
-			add(line, layout.CheckRecord(typ, v))
-		default:
-			add(line, checkFields(fs, v))
+		fs = layout.fields(typ, fs, len(v))
+		if len(v) != len(fs) {
+			out = append(out, Finding{line, "", "field_count", fieldCountMsg(typ+" record", v, fs, layout.Quoted)})
+			continue
 		}
+		add(line, layout.checkRecord(typ, fs, v))
 	}
 
+	f := File{hdr, recs, len(records)}
 	if hdrOK && layout.CheckFile != nil {
-		out = append(out, layout.CheckFile(File{hdr, recs, len(records)})...)
+		out = append(out, layout.CheckFile(f)...)
 	}
-	sort.SliceStable(out, func(i, j int) bool { return out[i].Line < out[j].Line })
-	if len(out) > 0 || layout.Summary == nil {
-		return Result{Findings: out, Format: name}
-	}
-	return Result{Format: name, Summary: layout.Summary(File{hdr, recs, len(records)})}
+	return finish(out, name, layout, f)
 }
 
-func fieldCountMsg(what string, got int, fs []Field, quoted bool) string {
+func (l Layout) checkRecord(typ string, fs []Field, v []string) []Problem {
+	if l.CheckRecord != nil {
+		return l.CheckRecord(typ, v)
+	}
+	return checkFields(fs, v)
+}
+
+// finish sorts findings, splits off warnings and collapses repeated ones.
+func finish(out []Finding, name string, layout Layout, f File) Result {
+	sort.SliceStable(out, func(i, j int) bool { return out[i].Line < out[j].Line })
+	r := Result{Format: name}
+	// Extra decimals usually affect a whole column, so report one warning per field.
+	first, more, last := map[string]int{}, map[string]int{}, map[string]int{}
+	for _, f := range out {
+		if collapsed[f.Code] != "" {
+			k := f.Code + "|" + f.Field
+			if _, ok := first[k]; ok {
+				more[k]++
+				last[k] = f.Line
+				continue
+			}
+			first[k] = len(r.Warnings)
+		}
+		if warningCodes[f.Code] {
+			r.Warnings = append(r.Warnings, f)
+		} else {
+			r.Findings = append(r.Findings, f)
+		}
+	}
+	for k, n := range more {
+		w := &r.Warnings[first[k]]
+		w.Msg += fmt.Sprintf(collapsed[w.Code], n, last[k])
+	}
+	if len(r.Findings) == 0 && layout.Summary != nil {
+		r.Summary = layout.Summary(f)
+	}
+	return r
+}
+
+// fields returns the field list for typ that has n fields, or fs if none does.
+func (l Layout) fields(typ string, fs []Field, n int) []Field {
+	for _, a := range l.Alt[typ] {
+		if len(a) == n {
+			return a
+		}
+	}
+	return fs
+}
+
+// trimEmpty drops empty trailing fields beyond the longest field list for typ, with a warning.
+func (l Layout) trimEmpty(typ string, fs []Field, v []string, line int, add func(int, []Problem)) []string {
+	n := -1
+	for _, c := range append([][]Field{fs}, l.Alt[typ]...) {
+		if len(c) == len(v) {
+			return v
+		}
+		if len(c) < len(v) && len(c) > n && strings.Join(v[len(c):], "") == "" {
+			n = len(c)
+		}
+	}
+	if n < 0 {
+		return v
+	}
+	add(line, []Problem{{"", "extra_empty_fields", fmt.Sprintf("%s record has %d empty fields after the %d expected; remove the trailing commas", typ, len(v)-n, n)}})
+	return v[:n]
+}
+
+func fieldCountMsg(what string, v []string, fs []Field, quoted bool) string {
+	got := len(v)
 	fix := "add the missing fields (a blank field still needs its comma)"
 	switch {
 	case got > len(fs) && quoted:
@@ -179,7 +262,7 @@ func fieldCountMsg(what string, got int, fs []Field, quoted bool) string {
 	case got > len(fs):
 		fix = "remove the extra fields (commas are not allowed inside a field)"
 	}
-	return fmt.Sprintf("%s has %d fields but must have %d; %s. Expected: %s", what, got, len(fs), fix, names(fs))
+	return fmt.Sprintf("%s has %d fields but must have %d; %s.%s", what, got, len(fs), fix, expectedGot(fs, v))
 }
 
 func keys[V any](m map[string]V) string {

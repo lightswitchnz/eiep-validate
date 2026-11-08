@@ -36,7 +36,6 @@ type at struct {
 
 func TestEIEP13A(t *testing.T) {
 	h1 := hdr("1.4", "3473b1e40cb64855ae8404f9d2830bea", 1)
-	uid36 := strings.Repeat("a", 36)
 	tests := []struct {
 		name string
 		in   string
@@ -58,10 +57,7 @@ func TestEIEP13A(t *testing.T) {
 		{"no HDR", file(goodDET), []at{{1, ""}}},
 		{"wrong file type", file("HDR,REQCONS,1.4"), []at{{1, "File type"}}},
 		{"unsupported version", file(hdr("1.0", "u", 0)), []at{{1, "Version"}}},
-		{"1.1 serial too long", file(hdr("1.1", "u", 1), det(map[int]string{5: strings.Repeat("S", 16)})), []at{{2, "Metering component serial number"}}},
 		{"1.2 no response code 005", file(hdr("1.2", "u", 1), det(map[int]string{3: "005"})), []at{{2, "Response code"}}},
-		{"1.1 uid too long", file(hdr("1.1", uid36, 0)), []at{{1, "Unique request identifier"}}},
-		{"1.3 uid too long", file(hdr("1.3", uid36, 0)), []at{{1, "Unique request identifier"}}},
 		{"header field count", file(h1+",extra", goodDET), []at{{1, ""}}},
 		{"count mismatch", file(hdr("1.4", "u", 2), goodDET), []at{{1, "Number of detail records"}}},
 		{"period reversed", file("HDR,ICPCONS,1.4,GENE,GENE,3ECL,06/08/2026,u,0,06/08/2026,01/08/2026"), []at{{1, "Report period end date"}}},
@@ -70,9 +66,8 @@ func TestEIEP13A(t *testing.T) {
 		{"unknown record", file(h1, goodDET, "TRL,1"), []at{{3, ""}}},
 		{"blank line", file(h1, "", goodDET), []at{{2, ""}}},
 		{"detail field count", file(h1, goodDET+",0"), []at{{2, ""}}},
+		{"extra empty fields with error", file(h1, det(map[int]string{6: "Z"})+",,"), []at{{2, "Energy flow direction"}}},
 		{"ICP blank", file(h1, det(map[int]string{2: ""})), []at{{2, "ICP identifier"}}},
-		{"ICP too long", file(h1, det(map[int]string{2: "0001423030UND35X"})), []at{{2, "ICP identifier"}}},
-		{"leading space", file(h1, det(map[int]string{5: " SERIAL1"})), []at{{2, "Metering component serial number"}}},
 		{"non-ASCII", file(h1, det(map[int]string{5: "SÉRIAL"})), []at{{2, "Metering component serial number"}}},
 		{"bad response code", file(h1, det(map[int]string{3: "0"})), []at{{2, "Response code"}}},
 		{"bad direction", file(h1, det(map[int]string{6: "Z"})), []at{{2, "Energy flow direction"}}},
@@ -82,8 +77,6 @@ func TestEIEP13A(t *testing.T) {
 		{"no seconds", file(h1, det(map[int]string{10: "01/08/2026 00:30"})), []at{{2, "Read period end date and time"}}},
 		{"impossible date", file(h1, det(map[int]string{9: "31/02/2026 00:00:01"})), []at{{2, "Read period start date and time"}}},
 		{"end before start", file(h1, det(map[int]string{10: "01/08/2026 00:00:00"})), []at{{2, "Read period end date and time"}}},
-		{"too many decimals", file(h1, det(map[int]string{12: "1.234"})), []at{{2, "Unit quantity active energy volume"}}},
-		{"leading zero", file(h1, det(map[int]string{12: "01.5"})), []at{{2, "Unit quantity active energy volume"}}},
 		{"lone point", file(h1, det(map[int]string{12: "."})), []at{{2, "Unit quantity active energy volume"}}},
 		{"too many digits", file(h1, det(map[int]string{12: "12345678901"})), []at{{2, "Unit quantity active energy volume"}}},
 		{"rejected with data", file(h1, det(map[int]string{3: "002"})), []at{
@@ -118,8 +111,8 @@ func TestMessagesSuggestFix(t *testing.T) {
 	tests := []struct{ in, want string }{
 		{file(h1, det(map[int]string{9: "2026-08-01 00:00:01"})), `write it as "01/08/2026 00:00:01"`},
 		{file(h1, det(map[int]string{10: "01/08/2026 00:30"})), `write it as "01/08/2026 00:30:00"`},
-		{file(h1, det(map[int]string{12: "1.234"})), `round it to at most 2, e.g. "1.23"`},
 		{file(h1, det(map[int]string{12: ".5"})), `"0.5"`},
+		{file(h1, det(map[int]string{12: "00123456789012.5"})), "at most"},
 		{file(h1, det(map[int]string{8: ""})), "fill it in"},
 		{file(hdr("1.4", "u", 3), goodDET), "set it to 1"},
 		{file(h1, goodDET+",0"), "remove the extra fields"},
@@ -128,6 +121,43 @@ func TestMessagesSuggestFix(t *testing.T) {
 		fs := Validate([]byte(tt.in))
 		if len(fs) != 1 || !strings.Contains(fs[0].Msg, tt.want) {
 			t.Errorf("want one finding containing %q, got %+v", tt.want, fs)
+		}
+	}
+}
+
+func TestWarnings(t *testing.T) {
+	tests := []struct {
+		in   string
+		want at
+	}{
+		{file(hdr("1.4", "u", 1), det(map[int]string{12: "1.234"})), at{2, "Unit quantity active energy volume"}},
+		{file(hdr("1.4", "u", 1), det(map[int]string{12: "01.5"})), at{2, "Unit quantity active energy volume"}},
+		{file(hdr("1.4", "u", 1), det(map[int]string{5: " SERIAL1"})), at{2, "Metering component serial number"}},
+		{doc14v1(map[int]string{1: strings.Replace(base14v1[0], ",12345,", ",0001,", 1)}), at{1, "Unique file identifier"}},
+		{doc14v1(nil, "PLAN,PRLU,residential - STANDARD user,01/04/2016,,30/06/2016,Y", "NETWORK,ckhk,WIL0331CKHK CPK0331CKHK CPK0111CKHK,RSU,LCC1", "TARIFF,X,X,F,1,,,,"), at{13, "Retailers plan description"}},
+		{doc14(map[int]string{14: "TARIFF,RSU-24UN,TR_CKHK_RSU,TT_any,0.1234567,"}), at{14, "Tariff rate"}},
+		{file(hdr("1.4", "u", 1), goodDET+",,"), at{2, ""}},
+		{doc14v1(map[int]string{2: base14v1[1] + ",,,"}), at{2, ""}},
+		{doc14(nil, "PLAN,P2,Residential - standard user,2025-04-01,,,N,", "TARIFF,X,TR_CKHK_RSU,TT_any,1,"), at{15, "Plan description"}},
+		{doc14(nil, "PLAN,P2,residential - STANDARD user,,,,N,", "TARIFF,X,TR_CKHK_RSU,TT_any,1,"), at{15, "Plan description"}},
+		{file(hdr("1.1", "u", 1), det(map[int]string{5: strings.Repeat("S", 16)})), at{2, "Metering component serial number"}},
+		{file(hdr("1.1", strings.Repeat("a", 36), 0)), at{1, "Unique request identifier"}},
+		{file(hdr("1.3", strings.Repeat("a", 36), 0)), at{1, "Unique request identifier"}},
+		{file(hdr("1.4", "u", 1), det(map[int]string{2: "0001423030UND35X"})), at{2, "ICP identifier"}},
+		{doc14(map[int]string{5: "ATTRIBUTE,AT_END_202503310000000,TARIFF_END_DATE,2025-03-31,,,", 13: "TARIFF,RSU-FIXED,TR_CKHK_RSU,TT_dly_sup_chg,2.053,AT_END_202503310000000"}), at{5, "Attribute record identifier"}},
+		{doc14(map[int]string{7: "TARIFFREGION,TR_CKHK_RSU," + strings.Repeat("d", 51)}), at{7, "Description"}},
+		{doc14v1(map[int]string{8: "TARIFF,RSU-FIXED,Daily supply charge,F,2.15600001,Day,B,Fixed,"}), at{8, "Tariff rate"}},
+	}
+	for _, tt := range tests {
+		r := Check([]byte(tt.in))
+		var ws []Finding
+		for _, w := range r.Warnings {
+			if w.Code != "deprecated" {
+				ws = append(ws, w)
+			}
+		}
+		if len(r.Findings) > 0 || len(ws) != 1 || (at{ws[0].Line, ws[0].Field}) != tt.want || r.Summary == "" {
+			t.Errorf("want only a warning at %v and a summary, got %+v", tt.want, r)
 		}
 	}
 }
