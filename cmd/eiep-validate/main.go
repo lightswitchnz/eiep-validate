@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"eiep-validate/internal/eiep"
@@ -20,13 +21,17 @@ type fileFinding struct {
 	Warning bool `json:"warning,omitempty"`
 }
 
+// strictOnly are warnings shown only with --strict: against the spec but harmless to a reader of the file.
+var strictOnly = map[string]bool{"too_long": true, "shared_description": true, "duplicate_description": true}
+
 type kind struct{ field, code string }
 
 func main() {
 	asJSON := flag.Bool("json", false, "print every finding as JSON")
 	all := flag.Bool("all", false, "print every finding instead of summarising repeats")
+	strict := flag.Bool("strict", false, "also warn about values longer than the spec allows and plans sharing a description")
 	flag.Usage = func() {
-		fmt.Fprintln(os.Stderr, "usage: eiep-validate [--json] [--all] FILE...")
+		fmt.Fprintln(os.Stderr, "usage: eiep-validate [--json] [--all] [--strict] FILE...")
 		fmt.Fprintln(os.Stderr, "Validates EIEP files strictly against the Electricity Authority spec.")
 		fmt.Fprintln(os.Stderr, "Exit status: 0 valid (warnings allowed), 1 findings, 2 usage or read error.")
 		flag.PrintDefaults()
@@ -47,6 +52,9 @@ func main() {
 			continue
 		}
 		r := eiep.Check(data)
+		if !*strict {
+			r.Warnings = slices.DeleteFunc(r.Warnings, func(f eiep.Finding) bool { return strictOnly[f.Code] })
+		}
 		findings := r.Findings
 		if len(findings) > 0 && exit == 0 {
 			exit = 1
