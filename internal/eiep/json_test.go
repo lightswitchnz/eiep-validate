@@ -6,17 +6,17 @@ import (
 	"testing"
 )
 
-// The spec's Appendix C examples, extracted verbatim.
+// The spec's Appendix C examples, extracted verbatim; each declares the draft version 2.011.
 func TestJSONSpecExamples(t *testing.T) {
 	tests := []struct {
 		file     string
 		want     []at
 		warnings int
 	}{
-		{"example1.json", []at{{10, "$.RecordCount"}, {30, "$.Retailers[0].Attributes[2].DateValue"}}, 5},
-		{"example2.json", nil, 9},
-		{"example3.json", nil, 3},
-		{"example4.json", []at{{10, "$.RecordCount"}, {283, "$.Retailers[0].CustomerGroups[1].Plans[0].Tariffs[4].TariffRegion"}}, 3},
+		{"example1.json", []at{{10, "$.RecordCount"}, {30, "$.Retailers[0].Attributes[2].DateValue"}}, 6},
+		{"example2.json", nil, 10},
+		{"example3.json", nil, 4},
+		{"example4.json", []at{{10, "$.RecordCount"}, {283, "$.Retailers[0].CustomerGroups[1].Plans[0].Tariffs[4].TariffRegion"}}, 4},
 	}
 	for _, tt := range tests {
 		t.Run(tt.file, func(t *testing.T) {
@@ -50,7 +50,7 @@ func TestJSON(t *testing.T) {
 		{"syntax error", "{\n\"Retailers\": [\n}", []at{{3, ""}}},
 		{"not an object", "{\"Retailers\": [1]}", []at{{1, "$.Retailers[0]"}, {1, ""}}},
 		{"unknown element and bad type", "{\"Retailers\": [{\n\"RetailerBrandName\": true,\n\"Plans\": []}]}", []at{{2, "$.Retailers[0].RetailerBrandName"}, {2, "$.Retailers[0].RetailerBrandName"}, {3, "$.Retailers[0].Plans"}}},
-		{"unsupported version", `{"Version": 1, "Retailers": []}`, []at{{1, "$.Version"}}},
+		{"unsupported version", `{"Version": 3, "Retailers": []}`, []at{{1, "$.Version"}}},
 		{"tariff count", `{"RecordCount": 1, "Retailers": [{"RetailerBrandName": "R"}]}`, []at{{1, "$.RecordCount"}}},
 	}
 	for _, tt := range tests {

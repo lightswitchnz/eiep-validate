@@ -9,10 +9,11 @@ import (
 	"time"
 )
 
-// EIEP 14A: Retailer price schedule (PRCSCHD), v2.0 effective 30 October 2026.
+// EIEP 14A: Retailer product information (PRCSCHD), v1.0 effective 30 October 2026.
 // This protocol writes Num n.d as up to n integer and d decimal digits (a rate is "Num 6.6"),
 // so Len below is n+d.
-var eiep14a = Format{Name: "EIEP14A", ByMajor: true, Versions: map[string]Layout{"2": {
+// Versions are keyed "14A" for EIEP14A, which declares 1.0 (2.x in drafts), and "1" for the original EIEP14.
+var eiep14a = Format{Name: "EIEP14A", ByMajor: true, Pick: pickEIEP14, Supported: "1.0 (EIEP14A), 1 (original EIEP14)", Versions: map[string]Layout{"14A": {
 	Header:      eiep14aHeader,
 	Records:     eiep14aRecords,
 	Quoted:      true,
@@ -20,6 +21,20 @@ var eiep14a = Format{Name: "EIEP14A", ByMajor: true, Versions: map[string]Layout
 	CheckFile:   checkEIEP14AFile,
 	Summary:     func(f File) string { return summarisePlans(f, parseISODate, isoDate) },
 }, "1": eiep14v1}}
+
+// pickEIEP14 tells EIEP14A from the original EIEP14, which shares its file type and version 1,
+// by EIEP14A's ISO 8601 run date and UUID file identifier.
+func pickEIEP14(hdr []string, major string) string {
+	switch {
+	case major == "2", major == "1" && (len(hdr) > 6 && strings.ContainsAny(hdr[6], "-T") || len(hdr) > 8 && strings.Contains(hdr[8], "-")):
+		return "14A"
+	case major == "1":
+		return "1"
+	}
+	return ""
+}
+
+const draftVersion = "%q is a draft version number; the final EIEP14A spec is version 1.0, so declare 1.0"
 
 const hdrRecordCount = 9
 
@@ -250,6 +265,9 @@ var references = []struct {
 
 func checkEIEP14AFile(f File) []Finding {
 	var out []Finding
+	if strings.HasPrefix(f.Header[2], "2") {
+		out = append(out, Finding{1, eiep14aHeader[2].Name, "draft_version", fmt.Sprintf(draftVersion, f.Header[2])})
+	}
 	want, what := f.Lines-1, "lines after the header"
 	if f.JSON {
 		want, what = 0, "tariffs"

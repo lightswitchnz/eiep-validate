@@ -33,6 +33,10 @@ type Format struct {
 	Versions map[string]Layout
 	// ByMajor keys Versions by the major version only, e.g. "2" for 2.011.
 	ByMajor bool
+	// Pick returns the Versions key for a header when the version alone is ambiguous.
+	Pick func(hdr []string, version string) string
+	// Supported overrides the list of supported versions shown when a file's version is not one of them.
+	Supported string
 }
 
 // formats is keyed by the HDR file type field.
@@ -87,7 +91,7 @@ var collapsed = map[string]string{
 var jsonIndex = regexp.MustCompile(`\[[0-9]+\]`)
 
 // warningCodes are findings that do not make a file invalid.
-var warningCodes = map[string]bool{"extra_decimals": true, "leading_zeros": true, "edge_spaces": true, "duplicate_plan": true, "too_long": true, "extra_empty_fields": true, "shared_description": true, "duplicate_description": true, "deprecated": true, "json_alias": true}
+var warningCodes = map[string]bool{"extra_decimals": true, "leading_zeros": true, "edge_spaces": true, "duplicate_plan": true, "too_long": true, "extra_empty_fields": true, "shared_description": true, "duplicate_description": true, "deprecated": true, "json_alias": true, "draft_version": true}
 
 type Result struct {
 	Findings []Finding
@@ -133,6 +137,9 @@ func Check(data []byte) Result {
 		version, _, _ = strings.Cut(version, ".")
 		supported = strings.ReplaceAll(supported+",", ",", ".x,")
 		supported = strings.TrimSuffix(supported, ",")
+	}
+	if format.Pick != nil {
+		version, supported = format.Pick(hdr, version), format.Supported
 	}
 	layout, ok := format.Versions[version]
 	if !ok {

@@ -120,7 +120,7 @@ func checkJSON(data []byte) Result {
 		return Result{Findings: []Finding{{line, "", "json", "not valid JSON: " + err.Error()}}}
 	}
 
-	layout := eiep14a.Versions["2"]
+	layout := eiep14a.Versions["14A"]
 	var out []Finding
 	var hdr []string
 	var hpos map[string]jpos
@@ -201,9 +201,9 @@ func checkJSON(data []byte) Result {
 	}
 	walk("HDR", "$", root)
 
-	version := or(hdr[2], "2")
-	if major, _, _ := strings.Cut(version, "."); major != "2" {
-		return Result{Findings: []Finding{{1, "$.Version", "unsupported", fmt.Sprintf("EIEP14A version %q is not supported in JSON; supported: 2.x", version)}}}
+	version := or(hdr[2], "1.0")
+	if major, _, _ := strings.Cut(version, "."); major != "1" && major != "2" {
+		return Result{Findings: []Finding{{1, "$.Version", "unsupported", fmt.Sprintf("EIEP14A version %q is not supported; supported: 1.x", version)}}}
 	}
 	for _, f := range layout.CheckFile(File{hdr, recs, 0, true}) {
 		if l, ok := hpos[f.Field]; ok && f.Line == 1 {

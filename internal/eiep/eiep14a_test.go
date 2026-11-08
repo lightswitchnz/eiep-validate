@@ -9,7 +9,7 @@ import (
 
 // base14 is spec Example 1 abridged, with a schedule added and its invalid 2025-04-31 corrected.
 var base14 = []string{
-	"HDR,PRCSCHD,2.011,ASRL,ASRL,ANY,2016-05-22T12:23:45+12,,c7d90f3a-d62b-4923-95c4-4aef120d831e,%d,E,I",
+	"HDR,PRCSCHD,1.0,ASRL,ASRL,ANY,2016-05-22T12:23:45+12,,c7d90f3a-d62b-4923-95c4-4aef120d831e,%d,E,I",
 	"RETAILER,ASRL,ASRL,Simple Retailer Ltd",
 	"ATTRIBUTE,AT_anzsic_000000,ANZSIC,,,000000,",
 	"ATTRIBUTE,AT_START_20250401,TARIFF_START_DATE,2025-04-01,,,",
@@ -55,7 +55,8 @@ func TestEIEP14A(t *testing.T) {
 		{"valid", doc14(nil), nil},
 		{"valid count excluding header", strings.Replace(doc14(nil), ",14,E", ",13,E", 1), nil},
 		{"valid CRLF", strings.ReplaceAll(doc14(nil), "\n", "\r\n"), nil},
-		{"valid version 2.0", doc14(map[int]string{1: strings.Replace(base14[0], "2.011", "2.0", 1)}), nil},
+		{"valid draft version 2.0", doc14(map[int]string{1: strings.Replace(base14[0], "1.0", "2.0", 1)}), nil},
+		{"valid version 1", doc14(map[int]string{1: strings.Replace(base14[0], "1.0", "1", 1)}), nil},
 		{"valid quoted comma", doc14(map[int]string{2: `RETAILER,ASRL,ASRL,"Simple Retailer, ""Ltd"""`}), nil},
 		{"valid lowercase", doc14(map[int]string{8: "network,CKHK,,RSU,", 12: "plan,PRSU,Residential - standard user,,,,n,"}), nil},
 		{"valid day names", doc14(map[int]string{6: "SCHEDULE,SC_night,2,00:00,07:00,MON TUE,JUN JUL"}), nil},
@@ -64,7 +65,7 @@ func TestEIEP14A(t *testing.T) {
 		{"valid all networks", doc14(map[int]string{14: "TARIFF,RSU-24UN,,TT_any,0.1937,"}), nil},
 		{"valid second retailer", doc14(nil, "RETAILER,BRTL,,Other", "TARIFFTYPE,TT_any,Anytime,V,kWh,X,,,", "CUSTOMER,,", "PLAN,PRSU,Other plan,,,,N,", "TARIFF,,,TT_any,0.2,"), nil},
 
-		{"unsupported version", doc14(map[int]string{1: strings.Replace(base14[0], "2.011", "3.0", 1)}), []at{{1, "Version"}}},
+		{"unsupported version", doc14(map[int]string{1: strings.Replace(base14[0], "1.0", "3.0", 1)}), []at{{1, "Version"}}},
 		{"count mismatch", strings.Replace(doc14(nil), ",14,E", ",26,E", 1), []at{{1, "Number of detailed records"}}},
 		{"run date without offset", doc14(map[int]string{1: strings.Replace(base14[0], "+12", "", 1)}), []at{{1, "Report run date and time"}}},
 		{"bad UUID", doc14(map[int]string{1: strings.Replace(base14[0], "c7d90f3a-", "c7d90f3a", 1)}), []at{{1, "Unique file identifier"}}},
@@ -94,7 +95,7 @@ func TestEIEP14A(t *testing.T) {
 		{"close after end", doc14(map[int]string{12: "PLAN,PRSU,Residential - standard user,,2016-03-01,2016-04-01,N,"}), []at{{12, "Close date"}}},
 		{"close equals end", doc14(map[int]string{12: "PLAN,PRSU,Residential - standard user,,2016-03-01,2016-03-01,N,"}), []at{{12, "Close date"}}},
 		{"record before retailer", doc14(map[int]string{2: ""}), []at{{2, ""}, {3, ""}, {4, ""}, {5, ""}, {6, ""}, {7, ""}, {8, ""}, {9, ""}, {10, ""}, {11, ""}, {12, ""}, {13, ""}}},
-		{"no retailer", file("HDR,PRCSCHD,2.011,ASRL,ASRL,ANY,2016-05-22T12:23:45+12,,c7d90f3a-d62b-4923-95c4-4aef120d831e,1,E,I"), []at{{1, ""}}},
+		{"no retailer", file("HDR,PRCSCHD,1.0,ASRL,ASRL,ANY,2016-05-22T12:23:45+12,,c7d90f3a-d62b-4923-95c4-4aef120d831e,1,E,I"), []at{{1, ""}}},
 		{"network without region", doc14(map[int]string{7: ""}, "NETWORK,CKHK,,RSU,"), []at{{7, ""}, {12, "Tariff region identifier"}, {13, "Tariff region identifier"}, {14, ""}}},
 		{"plan without customer", doc14(map[int]string{11: ""}), []at{{11, ""}}},
 		{"tariff without plan", doc14(map[int]string{12: ""}), []at{{12, ""}, {13, ""}}},

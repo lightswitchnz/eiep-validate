@@ -147,6 +147,7 @@ func TestWarnings(t *testing.T) {
 		{doc14(map[int]string{5: "ATTRIBUTE,AT_END_202503310000000,TARIFF_END_DATE,2025-03-31,,,", 13: "TARIFF,RSU-FIXED,TR_CKHK_RSU,TT_dly_sup_chg,2.053,AT_END_202503310000000"}), at{5, "Attribute record identifier"}},
 		{doc14(map[int]string{7: "TARIFFREGION,TR_CKHK_RSU," + strings.Repeat("d", 51)}), at{7, "Description"}},
 		{doc14v1(map[int]string{8: "TARIFF,RSU-FIXED,Daily supply charge,F,2.15600001,Day,B,Fixed,"}), at{8, "Tariff rate"}},
+		{doc14(map[int]string{1: strings.Replace(base14[0], "1.0", "2.011", 1)}), at{1, "Version"}},
 	}
 	for _, tt := range tests {
 		r := Check([]byte(tt.in))
