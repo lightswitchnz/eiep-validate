@@ -65,3 +65,19 @@ func TestJSON(t *testing.T) {
 		})
 	}
 }
+
+func TestPlans(t *testing.T) {
+	data, err := os.ReadFile("testdata/example4.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	plans := Check(data).Plans
+	var got []string
+	for _, a := range plans[0].Attributes {
+		got = append(got, a.Kind+" "+a.Code)
+	}
+	want := []string{"requirement BUNDLED_GAS", "requirement CREDIT_CHECK", "requirement METER_TYPE_NHH", "perk DISCOUNT_GAS", "customer ANZSIC"}
+	if len(plans) != 3 || plans[0].ID != "ASRL_RLU_GAS" || !reflect.DeepEqual(got, want) {
+		t.Errorf("got %d plans, %s %v, want 3, ASRL_RLU_GAS %v", len(plans), plans[0].ID, got, want)
+	}
+}

@@ -20,6 +20,7 @@ var eiep14a = Format{Name: "EIEP14A", ByMajor: true, Pick: pickEIEP14, Supported
 	CheckRecord: checkEIEP14ARecord,
 	CheckFile:   checkEIEP14AFile,
 	Summary:     func(f File) string { return summarisePlans(f, parseISODate, isoDate) },
+	Plans:       eiep14aPlans,
 }, "1": eiep14v1}}
 
 // pickEIEP14 tells EIEP14A from the original EIEP14, which shares its file type and version 1,

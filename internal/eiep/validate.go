@@ -26,6 +26,8 @@ type Layout struct {
 	CheckFile func(f File) []Finding
 	// Summary describes a valid file's contents.
 	Summary func(f File) string
+	// Plans lists the plans in a file with their attributes.
+	Plans func(f File) []Plan
 }
 
 type Format struct {
@@ -100,6 +102,7 @@ type Result struct {
 	Format string
 	// Summary describes the contents of a valid file.
 	Summary string
+	Plans   []Plan
 }
 
 func Check(data []byte) Result {
@@ -243,6 +246,9 @@ func finish(out []Finding, name string, layout Layout, f File) Result {
 	for k, n := range more {
 		w := &r.Warnings[first[k]]
 		w.Msg += fmt.Sprintf(collapsed[w.Code], n, last[k])
+	}
+	if layout.Plans != nil {
+		r.Plans = layout.Plans(f)
 	}
 	if len(r.Findings) == 0 && layout.Summary != nil {
 		r.Summary = layout.Summary(f)

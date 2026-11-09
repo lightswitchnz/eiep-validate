@@ -26,12 +26,18 @@ var strictOnly = map[string]bool{"too_long": true, "shared_description": true, "
 
 type kind struct{ field, code string }
 
+type filePlan struct {
+	File string `json:"file"`
+	eiep.Plan
+}
+
 func main() {
 	asJSON := flag.Bool("json", false, "print every finding as JSON")
 	all := flag.Bool("all", false, "print every finding instead of summarising repeats")
+	plans := flag.Bool("plans", false, "list each EIEP14A plan with the attributes that apply to it, such as requirements and perks")
 	strict := flag.Bool("strict", false, "also warn about values longer than the spec allows and plans sharing a description")
 	flag.Usage = func() {
-		fmt.Fprintln(os.Stderr, "usage: eiep-validate [--json] [--all] [--strict] FILE...")
+		fmt.Fprintln(os.Stderr, "usage: eiep-validate [--json] [--all] [--strict] [--plans] FILE...")
 		fmt.Fprintln(os.Stderr, "Validates EIEP files strictly against the Electricity Authority spec.")
 		fmt.Fprintln(os.Stderr, "Exit status: 0 valid (warnings allowed), 1 findings, 2 usage or read error.")
 		flag.PrintDefaults()
@@ -44,6 +50,7 @@ func main() {
 
 	exit := 0
 	results := []fileFinding{}
+	planResults := []filePlan{}
 	for _, path := range flag.Args() {
 		data, err := os.ReadFile(path)
 		if err != nil {
@@ -59,6 +66,16 @@ func main() {
 		if len(findings) > 0 && exit == 0 {
 			exit = 1
 		}
+		if *plans {
+			if *asJSON {
+				for _, p := range r.Plans {
+					planResults = append(planResults, filePlan{path, p})
+				}
+			} else {
+				printPlans(filepath.Base(path), r.Plans)
+			}
+			continue
+		}
 		if *asJSON {
 			for _, f := range findings {
 				results = append(results, fileFinding{path, f, false})
@@ -73,7 +90,11 @@ func main() {
 	if *asJSON {
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
-		enc.Encode(results)
+		if *plans {
+			enc.Encode(planResults)
+		} else {
+			enc.Encode(results)
+		}
 	}
 	os.Exit(exit)
 }
@@ -128,6 +149,22 @@ func printFindings(path string, findings []eiep.Finding, all bool, label, noun s
 				name = k.code
 			}
 			fmt.Printf("%s: %s\n", bold(path), dim(fmt.Sprintf("...and %d more %q %s like these, up to line %d (use --all to list them)", n, name, noun, last[k])))
+		}
+	}
+}
+
+func printPlans(path string, plans []eiep.Plan) {
+	if plans == nil {
+		fmt.Printf("%s: %s\n", bold(path), dim("no EIEP14A plans"))
+	}
+	for _, p := range plans {
+		fmt.Printf("%s: %s / %s / %s %s\n", bold(path)+cyan(fmt.Sprintf(":%d", p.Line)), p.Retailer, p.Customer, bold(p.Description), dim(p.ID))
+		for _, a := range p.Attributes {
+			code := a.Code
+			if a.Value != "" {
+				code += " " + a.Value
+			}
+			fmt.Printf("  %s %s %s %s\n", yellow(a.Kind+":"), code, dim("("+a.Level+")"), a.Description)
 		}
 	}
 }
