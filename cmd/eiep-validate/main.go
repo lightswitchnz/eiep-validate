@@ -68,11 +68,11 @@ func main() {
 		}
 		if *plans {
 			if *asJSON {
-				for _, p := range r.Plans {
+				for _, p := range r.Plans() {
 					planResults = append(planResults, filePlan{path, p})
 				}
 			} else {
-				printPlans(filepath.Base(path), r.Plans)
+				printPlans(filepath.Base(path), r.Plans())
 			}
 			continue
 		}

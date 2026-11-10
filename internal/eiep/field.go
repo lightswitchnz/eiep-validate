@@ -51,7 +51,6 @@ const (
 )
 
 var (
-	numRe      = regexp.MustCompile(`^-?(0|[1-9][0-9]*)(\.[0-9]+)?$`)
 	leadZeroRe = regexp.MustCompile(`^-?0[0-9]`)
 	dateRe     = regexp.MustCompile(`^[0-9]{2}/[0-9]{2}/[0-9]{4}$`)
 	dateTimeRe = regexp.MustCompile(`^[0-9]{2}/[0-9]{2}/[0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2}$`)
@@ -60,7 +59,6 @@ var (
 	timeRe     = regexp.MustCompile(`^[0-9]{2}:[0-9]{2}:[0-9]{2}$`)
 	clockRe    = regexp.MustCompile(`^([0-9]{2}):([0-9]{2})$`)
 	uuidRe     = regexp.MustCompile(`^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$`)
-	identRe    = regexp.MustCompile(`^[A-Za-z0-9_]+$`)
 
 	// Common non-spec spellings, used only to suggest the corrected value.
 	looseDates     = []string{"2006-01-02", "2/1/2006", "02-01-2006", "2006/01/02"}
@@ -120,6 +118,36 @@ func parseClock(v string) (int, bool) {
 	return h*60 + min, true
 }
 
+func digits(s string) bool {
+	for i := 0; i < len(s); i++ {
+		if s[i] < '0' || s[i] > '9' {
+			return false
+		}
+	}
+	return s != ""
+}
+
+// parseNum counts the digits before and after the decimal point of a number written as
+// digits with an optional leading - and decimal part, and no leading zeros.
+func parseNum(v string) (whole, dec int, ok bool) {
+	w, d, point := strings.Cut(strings.TrimPrefix(v, "-"), ".")
+	if !digits(w) || len(w) > 1 && w[0] == '0' || point && !digits(d) {
+		return 0, 0, false
+	}
+	return len(w), len(d), true
+}
+
+// isIdent reports whether s is letters, digits and underscores only.
+func isIdent(s string) bool {
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if (c < '0' || c > '9') && (c < 'A' || c > 'Z') && (c < 'a' || c > 'z') && c != '_' {
+			return false
+		}
+	}
+	return s != ""
+}
+
 func suggest(v string, layouts []string, out string) string {
 	for _, l := range layouts {
 		if t, err := time.Parse(l, v); err == nil {
@@ -159,9 +187,9 @@ func (f Field) check(v string) (code, msg string) {
 			return "bad_code", fmt.Sprintf("%q is not a valid code; use one of %s%s", v, strings.Join(f.Codes, ", "), f.hint())
 		}
 	case Num:
-		m := numRe.FindStringSubmatch(v)
+		whole, dec, ok := parseNum(v)
 		switch {
-		case m != nil:
+		case ok:
 		case strings.HasPrefix(v, "+"):
 			return "bad_number", fmt.Sprintf("%q has a + sign; remove it (only negatives carry a sign)", v)
 		case strings.HasPrefix(strings.TrimPrefix(v, "-"), "."):
@@ -182,10 +210,10 @@ func (f Field) check(v string) (code, msg string) {
 		default:
 			return "bad_number", fmt.Sprintf("%q is not a number; use digits with an optional leading - and decimal point, e.g. 123.45 (no spaces, units or thousands separators)", v)
 		}
-		if len(m[1]) > f.Len-f.Dec {
-			return "too_many_digits", fmt.Sprintf("%q has %d digits before the decimal point; at most %d are allowed", v, len(m[1]), f.Len-f.Dec)
+		if whole > f.Len-f.Dec {
+			return "too_many_digits", fmt.Sprintf("%q has %d digits before the decimal point; at most %d are allowed", v, whole, f.Len-f.Dec)
 		}
-		if dec := len(strings.TrimPrefix(m[2], ".")); dec > f.Dec {
+		if dec > f.Dec {
 			if f.Dec == 0 {
 				return "too_many_decimals", fmt.Sprintf("%q must be a whole number; remove the decimal part", v)
 			}
@@ -241,7 +269,7 @@ func (f Field) check(v string) (code, msg string) {
 			return "bad_uuid", fmt.Sprintf("%q is not a UUID; use 36 characters, hex digits in 8-4-4-4-12 groups, e.g. \"a9d48b18-6b1e-439c-9d05-9b144543a96e\"", v)
 		}
 	case Ident:
-		if !identRe.MatchString(v) {
+		if !isIdent(v) {
 			return "bad_identifier", fmt.Sprintf("%q may contain only letters, digits and underscores (no spaces or punctuation)", v)
 		}
 	case IdentList:
@@ -249,7 +277,7 @@ func (f Field) check(v string) (code, msg string) {
 			if id == "" {
 				return "spaces", fmt.Sprintf("%q has leading, trailing or double spaces; separate identifiers with single spaces", v)
 			}
-			if !identRe.MatchString(id) {
+			if !isIdent(id) {
 				return "bad_identifier", fmt.Sprintf("%q in %q is not an identifier; identifiers contain only letters, digits and underscores and are separated by single spaces", id, v)
 			}
 		}

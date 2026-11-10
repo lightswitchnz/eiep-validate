@@ -143,16 +143,16 @@ func checkJSON(data []byte) Result {
 		}
 		v := make([]string, len(fs))
 		v[0] = typ
-		pos := map[string]jpos{}
+		pos := make(map[string]jpos, len(fs))
+		if typ != "HDR" {
+			// Findings about the record as a whole point at its object.
+			pos[""] = jpos{path, n.line}
+		}
 		for _, f := range fs[1:] {
 			pos[f.Name] = jpos{path + "." + f.JSON, n.line}
 		}
-		var allowed []string
-		for _, f := range fs[1:] {
-			allowed = append(allowed, f.JSON)
-		}
-		for _, c := range jsonChildren[typ] {
-			allowed = append(allowed, c.key)
+		isChild := func(k string) bool {
+			return slices.ContainsFunc(jsonChildren[typ], func(c struct{ key, typ string }) bool { return c.key == k })
 		}
 		for _, k := range o.keys {
 			val, name := o.m[k], k
@@ -167,7 +167,14 @@ func checkJSON(data []byte) Result {
 				if v[i], ok = text(val, " "); !ok {
 					out = append(out, Finding{val.line, path + "." + k, "json_type", "must be a string, a number, null or a list of them"})
 				}
-			case !slices.Contains(allowed, k):
+			case !isChild(k):
+				var allowed []string
+				for _, f := range fs[1:] {
+					allowed = append(allowed, f.JSON)
+				}
+				for _, c := range jsonChildren[typ] {
+					allowed = append(allowed, c.key)
+				}
 				out = append(out, Finding{val.line, path + "." + k, "unknown_element", fmt.Sprintf("%q is not an element of this object; use one of %s", k, strings.Join(allowed, ", "))})
 			}
 		}

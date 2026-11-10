@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 )
 
 // Layout is one version of one EIEP format.
@@ -77,7 +78,22 @@ type Finding struct {
 	Msg   string `json:"message"`
 }
 
-var recordSep = regexp.MustCompile(`\r\n|\n|\r`)
+// splitLines splits s into records ended by CR-LF, LF or CR.
+func splitLines(s string) []string {
+	lines := make([]string, 0, strings.Count(s, "\n")+1)
+	for len(s) > 0 {
+		i := strings.IndexAny(s, "\r\n")
+		if i < 0 {
+			return append(lines, s)
+		}
+		lines = append(lines, s[:i])
+		if s[i] == '\r' && i+1 < len(s) && s[i+1] == '\n' {
+			i++
+		}
+		s = s[i+1:]
+	}
+	return lines
+}
 
 func Validate(data []byte) []Finding {
 	return Check(data).Findings
@@ -102,17 +118,23 @@ type Result struct {
 	Format string
 	// Summary describes the contents of a valid file.
 	Summary string
-	Plans   []Plan
+
+	plans func() []Plan
+}
+
+// Plans lists the plans of an EIEP14A file with the attributes that apply to each; nil for other formats.
+func (r Result) Plans() []Plan {
+	if r.plans == nil {
+		return nil
+	}
+	return r.plans()
 }
 
 func Check(data []byte) Result {
 	if t := bytes.TrimSpace(data); len(t) > 0 && t[0] == '{' {
 		return checkJSON(data)
 	}
-	records := recordSep.Split(string(data), -1)
-	if records[len(records)-1] == "" {
-		records = records[:len(records)-1]
-	}
+	records := splitLines(string(data))
 	if len(records) == 0 {
 		return Result{Findings: []Finding{{1, "", "structure", "file is empty; it must start with an HDR header record"}}}
 	}
@@ -248,7 +270,7 @@ func finish(out []Finding, name string, layout Layout, f File) Result {
 		w.Msg += fmt.Sprintf(collapsed[w.Code], n, last[k])
 	}
 	if layout.Plans != nil {
-		r.Plans = layout.Plans(f)
+		r.plans = sync.OnceValue(func() []Plan { return layout.Plans(f) })
 	}
 	if len(r.Findings) == 0 && layout.Summary != nil {
 		r.Summary = layout.Summary(f)
@@ -268,16 +290,21 @@ func (l Layout) fields(typ string, fs []Field, n int) []Field {
 
 // trimEmpty drops empty trailing fields beyond the longest field list for typ, with a warning.
 func (l Layout) trimEmpty(typ string, fs []Field, v []string, line int, add func(int, []Problem)) []string {
+	if len(v) == len(fs) {
+		return v
+	}
 	n := -1
-	for _, c := range append([][]Field{fs}, l.Alt[typ]...) {
-		if len(c) == len(v) {
-			return v
-		}
+	fit := func(c []Field) bool {
 		if len(c) < len(v) && len(c) > n && strings.Join(v[len(c):], "") == "" {
 			n = len(c)
 		}
+		return len(c) == len(v)
 	}
-	if n < 0 {
+	exact := fit(fs)
+	for _, c := range l.Alt[typ] {
+		exact = fit(c) || exact
+	}
+	if exact || n < 0 {
 		return v
 	}
 	add(line, []Problem{{"", "extra_empty_fields", fmt.Sprintf("%s record has %d empty fields after the %d expected; remove the trailing commas", typ, len(v)-n, n)}})
@@ -308,6 +335,9 @@ func keys[V any](m map[string]V) string {
 // splitQuoted splits a record per RFC 4180: a field is either unquoted, with no double quotes,
 // or wrapped in double quotes with each quote inside it doubled.
 func splitQuoted(s string) ([]string, error) {
+	if !strings.Contains(s, `"`) {
+		return strings.Split(s, ","), nil
+	}
 	var out []string
 	for {
 		n := len(out) + 1

@@ -49,9 +49,11 @@ func TestJSON(t *testing.T) {
 			[]at{{1, "$.Retailers[0].CustomerGroups[0].Plans[0].Tariffs[0].TariffTypeId"}}},
 		{"syntax error", "{\n\"Retailers\": [\n}", []at{{3, ""}}},
 		{"not an object", "{\"Retailers\": [1]}", []at{{1, "$.Retailers[0]"}, {1, ""}}},
-		{"unknown element and bad type", "{\"Retailers\": [{\n\"RetailerBrandName\": true,\n\"Plans\": []}]}", []at{{2, "$.Retailers[0].RetailerBrandName"}, {2, "$.Retailers[0].RetailerBrandName"}, {3, "$.Retailers[0].Plans"}}},
+		{"unknown element and bad type", "{\"Retailers\": [{\n\"RetailerBrandName\": true,\n\"Plans\": []}]}", []at{{1, "$.Retailers[0]"}, {2, "$.Retailers[0].RetailerBrandName"}, {2, "$.Retailers[0].RetailerBrandName"}, {3, "$.Retailers[0].Plans"}}},
 		{"unsupported version", `{"Version": 3, "Retailers": []}`, []at{{1, "$.Version"}}},
-		{"tariff count", `{"RecordCount": 1, "Retailers": [{"RetailerBrandName": "R"}]}`, []at{{1, "$.RecordCount"}}},
+		{"tariff count", `{"RecordCount": 1, "Retailers": [{"RetailerBrandName": "R"}]}`, []at{{1, "$.RecordCount"}, {1, "$.Retailers[0]"}}},
+		{"plan without tariffs", `{"Retailers": [{"RetailerBrandName": "R", "CustomerGroups": [{"Plans": [{"PlanId": "P", "Description": "D", "LowFixedCharge": "N", "Tariffs": []}]}]}]}`,
+			[]at{{1, "$.Retailers[0].CustomerGroups[0].Plans[0]"}}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -71,7 +73,7 @@ func TestPlans(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	plans := Check(data).Plans
+	plans := Check(data).Plans()
 	var got []string
 	for _, a := range plans[0].Attributes {
 		got = append(got, a.Kind+" "+a.Code)

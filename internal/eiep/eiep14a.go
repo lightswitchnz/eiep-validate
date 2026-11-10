@@ -49,7 +49,7 @@ var eiep14aHeader = []Field{
 	{Name: "Report run date and time", Kind: ISODateTime, Required: true, JSON: "RunDateTime"},
 	{Name: "Data extract date and time", Kind: ISODateTime, JSON: "ExtractDateTime"},
 	{Name: "Unique file identifier", Kind: UUID, Required: true, JSON: "Uniquifier"},
-	{Name: "Number of detailed records", Kind: Num, Len: 8, Required: true, Hint: "the number of lines in the file after the header", JSON: "RecordCount"},
+	{Name: "Number of detailed records", Kind: Num, Len: 8, Required: true, Hint: "the number of lines in the file, including the header", JSON: "RecordCount"},
 	{Name: "Utility type", Kind: Char, Len: 1, Required: true, Codes: []string{"E", "G"}, Hint: "E = electricity", JSON: "UtilType"},
 	{Name: "File status", Kind: Char, Len: 1, Required: true, Codes: []string{"I", "R", "X"}, Hint: "I = initial, R = replacement, X = replaces only the tariffs in this file", JSON: "FileStatus"},
 }
@@ -155,6 +155,8 @@ var (
 	dayNames  = []string{"MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"}
 	monthName = []string{"JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"}
 	rccPOARe  = regexp.MustCompile(`^[A-Za-z0-9]{1,6}-([0-9]{1,2})$`)
+	// dateAttributes are the attribute codes whose value is a date.
+	dateAttributes = []string{"TARIFF_START_DATE", "TARIFF_END_DATE", "TARIFF_CLOSE_DATE", "FIXED_TERM_DATE"}
 )
 
 func checkEIEP14ARecord(typ string, v []string) []Problem {
@@ -164,6 +166,10 @@ func checkEIEP14ARecord(typ string, v []string) []Problem {
 	add := func(i int, code, msg string) { p = append(p, Problem{fs[i].Name, code, msg}) }
 
 	switch typ {
+	case "ATTRIBUTE":
+		if v[3] == "" && foldIn(v[2], dateAttributes) {
+			add(3, "blank", fmt.Sprintf("mandatory for a %s attribute; fill in the date as YYYY-MM-DD", strings.ToUpper(v[2])))
+		}
 	case "SCHEDULE":
 		p = append(p, checkSchedule(fs[2:], v[2:])...)
 	case "TARIFFTYPE":
@@ -269,7 +275,8 @@ func checkEIEP14AFile(f File) []Finding {
 	if strings.HasPrefix(f.Header[2], "2") {
 		out = append(out, Finding{1, eiep14aHeader[2].Name, "draft_version", fmt.Sprintf(draftVersion, f.Header[2])})
 	}
-	want, what := f.Lines-1, "lines after the header"
+	// The spec counts every line; a count that leaves out the header is accepted too.
+	want, what := f.Lines, "lines including the header"
 	if f.JSON {
 		want, what = 0, "tariffs"
 		for _, r := range f.Records {
@@ -278,24 +285,50 @@ func checkEIEP14AFile(f File) []Finding {
 			}
 		}
 	}
-	if n, err := strconv.Atoi(f.Header[hdrRecordCount]); err == nil && n != want && (f.JSON || n != f.Lines) {
+	if n, err := strconv.Atoi(f.Header[hdrRecordCount]); err == nil && n != want && (f.JSON || n != f.Lines-1) {
 		out = append(out, Finding{1, eiep14aHeader[hdrRecordCount].Name, "count_mismatch", fmt.Sprintf("declares %d but the file has %d %s; set it to %d", n, want, what, want)})
 	}
 	if len(f.Records) == 0 {
 		return append(out, Finding{1, "", "structure", "file has no RETAILER record; add the retailer and its plans after the header"})
 	}
 
-	var retailers [][]Record
+	// starts indexes each RETAILER record; its records run up to the next one.
+	var starts []int
 	var prev string
-	var customer, plan bool
+	// The open RETAILER, CUSTOMER and PLAN, and whether each has the children the spec requires.
+	var retailer, customer, plan *Record
+	var customers, plans, tariffs bool
+	// grouped is set once the retailer's first CUSTOMER is seen.
+	var grouped bool
 	structure := func(r Record, msg string) { out = append(out, r.finding("", "structure", msg)) }
-	for _, r := range f.Records {
+	closePlan := func() {
+		if plan != nil && !tariffs {
+			structure(*plan, "PLAN has no TARIFF records; every plan needs at least one, so add its rates directly after it")
+		}
+		plan, tariffs = nil, false
+	}
+	closeCustomer := func() {
+		closePlan()
+		if customer != nil && !plans {
+			structure(*customer, "CUSTOMER has no PLAN records; every customer group needs at least one, so add its plans directly after it")
+		}
+		customer, plans = nil, false
+	}
+	closeRetailer := func() {
+		closeCustomer()
+		if retailer != nil && !customers {
+			structure(*retailer, "RETAILER has no CUSTOMER record; add at least one customer group with its plans and tariffs")
+		}
+		retailer, customers = nil, false
+	}
+	for i, r := range f.Records {
 		if r.Type == "RETAILER" {
-			retailers = append(retailers, nil)
-			customer, plan, prev = false, false, r.Type
+			closeRetailer()
+			starts = append(starts, i)
+			retailer, prev, grouped = &f.Records[i], r.Type, false
 			continue
 		}
-		if retailers == nil {
+		if starts == nil {
 			structure(r, fmt.Sprintf("%s record comes before any RETAILER record; every record belongs to the RETAILER above it", r.Type))
 			continue
 		}
@@ -305,28 +338,36 @@ func checkEIEP14AFile(f File) []Finding {
 				structure(r, "NETWORK record must directly follow its TARIFFREGION record (or another NETWORK in the same region); move it there")
 			}
 		case "CUSTOMER":
-			customer, plan = true, false
+			closeCustomer()
+			customer, customers, grouped = &f.Records[i], true, true
 		case "PLAN":
-			if !customer {
+			closePlan()
+			if customer == nil {
 				structure(r, "PLAN record has no CUSTOMER record above it; plans belong to the customer type above them, so add a CUSTOMER record first")
 			}
-			plan = true
+			// A misplaced child is reported once, not also as a parent without children.
+			plan, plans, customers = &f.Records[i], true, true
 		case "TARIFF":
-			if !plan {
+			if plan == nil {
 				structure(r, "TARIFF record has no PLAN record above it; tariffs belong to the plan above them, so move it under its PLAN")
 			}
+			tariffs, plans, customers = true, true, true
 		default:
-			if customer {
+			if grouped {
 				structure(r, fmt.Sprintf("%s record comes after a CUSTOMER record; ATTRIBUTE, SCHEDULE, TARIFFTYPE, TARIFFREGION and NETWORK records belong to the retailer, so move it above the retailer's first CUSTOMER", r.Type))
 			}
 		}
-		retailers[len(retailers)-1] = append(retailers[len(retailers)-1], r)
 		prev = r.Type
 	}
+	closeRetailer()
 
 	descriptions := map[string][]planKey{}
-	for _, recs := range retailers {
-		out = append(out, checkRetailer(recs, descriptions)...)
+	for i, start := range starts {
+		end := len(f.Records)
+		if i+1 < len(starts) {
+			end = starts[i+1]
+		}
+		out = append(out, checkRetailer(f.Records[start+1:end], descriptions)...)
 	}
 	return out
 }
@@ -391,7 +432,7 @@ func checkPlanDescriptions(recs []Record, valid func(Record, int) bool, descript
 		switch {
 		case r.Type == "TARIFFREGION" && len(r.V) > 1:
 			region = strings.ToUpper(r.V[1])
-		case r.Type == "NETWORK":
+		case r.Type == "NETWORK" && len(r.V) > 1:
 			networks[region] = append(networks[region], strings.ToUpper(strings.Join(r.V[1:], ",")))
 		}
 	}
