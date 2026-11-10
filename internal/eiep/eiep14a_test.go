@@ -152,7 +152,7 @@ func TestEIEP14AMessagesSuggestFix(t *testing.T) {
 func TestEIEP14ASummary(t *testing.T) {
 	r := Check([]byte(doc14(map[int]string{12: "PLAN,PRSU,Residential - standard user,2025-04-01,,,N,"})))
 	fs, got := r.Findings, r.Summary
-	if len(fs) > 0 || got != "13 records (retailers: 1, plans: 1, tariffs: 2), plans from 2025-04-01 to open" {
+	if len(fs) > 0 || got != "13 records (retailers: 1, plans: 1, tariffs: 2), plans from 2025-04-01 to open\n  Simple Retailer Ltd: plans: 1, tariffs: 2" {
 		t.Errorf("got %q %v", got, fs)
 	}
 }

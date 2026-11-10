@@ -80,7 +80,7 @@ func TestEIEP14v1(t *testing.T) {
 
 func TestEIEP14v1Summary(t *testing.T) {
 	r := Check([]byte(doc14v1(nil)))
-	if want := "11 records (retailers: 1, plans: 1, tariffs: 2), plans from 01/04/2016 to open"; len(r.Findings) > 0 || r.Summary != want || r.Format != "EIEP14 1" || len(r.Warnings) != 1 || r.Warnings[0].Code != "deprecated" {
+	if want := "11 records (retailers: 1, plans: 1, tariffs: 2), plans from 01/04/2016 to open\n  Simple Retailer Ltd: plans: 1, tariffs: 2"; len(r.Findings) > 0 || r.Summary != want || r.Format != "EIEP14 1" || len(r.Warnings) != 1 || r.Warnings[0].Code != "deprecated" {
 		t.Errorf("got %q %q %v", r.Format, r.Summary, r.Findings)
 	}
 }

@@ -493,9 +493,26 @@ func checkPlanDescriptions(recs []Record, valid func(Record, int) bool, descript
 // summarisePlans counts records and spans PLAN start (3) and end (4) dates, written in layout.
 func summarisePlans(f File, parse func(string) (time.Time, error), layout string) string {
 	n := map[string]int{}
+	type count struct {
+		name           string
+		plans, tariffs int
+	}
+	var retailers []count
 	var first, last time.Time
 	for _, r := range f.Records {
 		n[r.Type]++
+		if len(retailers) > 0 {
+			c := &retailers[len(retailers)-1]
+			switch r.Type {
+			case "PLAN":
+				c.plans++
+			case "TARIFF":
+				c.tariffs++
+			}
+		}
+		if r.Type == "RETAILER" {
+			retailers = append(retailers, count{name: r.V[3]})
+		}
 		if r.Type != "PLAN" {
 			continue
 		}
@@ -516,6 +533,9 @@ func summarisePlans(f File, parse func(string) (time.Time, error), layout string
 	s := fmt.Sprintf("%d records (retailers: %d, plans: %d, tariffs: %d)", len(f.Records), n["RETAILER"], n["PLAN"], n["TARIFF"])
 	if from != "" || to != "" {
 		s += fmt.Sprintf(", plans from %s to %s", or(from, "open"), or(to, "open"))
+	}
+	for _, c := range retailers {
+		s += fmt.Sprintf("\n  %s: plans: %d, tariffs: %d", c.name, c.plans, c.tariffs)
 	}
 	return s
 }
