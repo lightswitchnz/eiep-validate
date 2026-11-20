@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Go CLI that strictly validates NZ Electricity Authority EIEP files. Stdlib only, Go 1.22.
+Go CLI that strictly validates NZ Electricity Authority EIEP files. Stdlib only, Go 1.27.
 
 ## Layout
 
