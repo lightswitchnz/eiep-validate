@@ -47,7 +47,6 @@ jobs:
 
       # Signing runs once the SIGNPATH_ORGANIZATION_ID variable and SIGNPATH_API_TOKEN secret are set.
       - id: unsigned
-        if: vars.SIGNPATH_ORGANIZATION_ID != ''
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: windows-unsigned
@@ -61,9 +60,7 @@ jobs:
           signing-policy-slug: release-signing
           github-artifact-id: ${{ steps.unsigned.outputs.artifact-id }}
           wait-for-completion: true
-          output-artifact-directory: signed
-      - if: vars.SIGNPATH_ORGANIZATION_ID != ''
-        run: cp signed/*.exe dist/
+          output-artifact-directory: dist
 
       - run: gh release upload "$TAG" dist/*
         env:
