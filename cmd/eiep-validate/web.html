@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EIEP Validator</title>
+<style>
+:root { color-scheme: light dark; --ok: #1a7f37; --bad: #cf222e; --warn: #9a6700; --muted: #6e7781; --line: #d0d7de; }
+@media (prefers-color-scheme: dark) { :root { --ok: #3fb950; --bad: #f85149; --warn: #d29922; --muted: #8b949e; --line: #30363d; } }
+body { font: 15px/1.5 system-ui, sans-serif; max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
+h1 { font-size: 22px; margin: 0 0 16px; }
+#drop { border: 2px dashed var(--line); border-radius: 8px; padding: 40px 16px; text-align: center; cursor: pointer; }
+#drop.over { border-color: var(--ok); }
+label { display: inline-block; margin: 12px 0; color: var(--muted); }
+section { margin-top: 24px; }
+h2 { font-size: 17px; margin: 0 0 8px; overflow-wrap: anywhere; }
+.ok { color: var(--ok); } .bad { color: var(--bad); } .warn { color: var(--warn); } .muted { color: var(--muted); }
+pre { white-space: pre-wrap; margin: 0 0 8px; color: var(--muted); }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; }
+td, th { text-align: left; vertical-align: top; padding: 4px 8px; border-top: 1px solid var(--line); }
+td:first-child { white-space: nowrap; }
+</style>
+</head>
+<body>
+<h1>EIEP Validator</h1>
+<div id="drop">Drop EIEP files here, or click to choose<input id="pick" type="file" multiple hidden></div>
+<label><input id="strict" type="checkbox"> Strict: also warn about values longer than the spec allows and plans sharing a description</label>
+<div id="out"></div>
+<script>
+const drop = document.getElementById('drop'), pick = document.getElementById('pick');
+const strict = document.getElementById('strict'), out = document.getElementById('out');
+let files = [];
+
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+
+async function run() {
+  out.replaceChildren();
+  for (const f of files) {
+    const s = el('section');
+    out.append(s);
+    s.append(el('h2', null, f.name + ': checking…'));
+    try {
+      const res = await fetch('/check' + (strict.checked ? '?strict=1' : ''), { method: 'POST', body: f });
+      if (!res.ok) throw new Error(await res.text());
+      render(s, f.name, await res.json());
+    } catch (e) {
+      s.replaceChildren(el('h2', 'bad', f.name + ': ' + e.message));
+    }
+  }
+}
+
+function render(s, name, r) {
+  const findings = r.findings || [], warnings = r.warnings || [];
+  const h = el('h2', null, name + ': ');
+  if (r.format) h.append(r.format + ' ');
+  h.append(findings.length ? el('span', 'bad', findings.length + ' problems') : el('span', 'ok', 'valid'));
+  if (warnings.length) h.append(el('span', 'warn', ' (' + warnings.length + ' warnings)'));
+  s.replaceChildren(h);
+  if (r.summary) s.append(el('pre', null, r.summary));
+  const rows = [...findings.map(f => [f, false]), ...warnings.map(f => [f, true])].sort((a, b) => a[0].line - b[0].line);
+  if (!rows.length) return;
+  const t = el('table');
+  const head = el('tr');
+  for (const c of ['Line', 'Field', 'Message']) head.append(el('th', null, c));
+  t.append(head);
+  for (const [f, warn] of rows) {
+    const tr = el('tr');
+    tr.append(el('td', 'muted', f.line), el('td', null, f.field || ''));
+    const m = el('td');
+    if (warn) m.append(el('span', 'warn', 'warning: '));
+    m.append(f.message);
+    tr.append(m);
+    t.append(tr);
+  }
+  const wrap = el('div', 'scroll');
+  wrap.append(t);
+  s.append(wrap);
+}
+
+drop.onclick = () => pick.click();
+pick.onchange = () => { files = [...pick.files]; pick.value = ''; run(); };
+drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
+drop.ondragleave = () => drop.classList.remove('over');
+drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); files = [...e.dataTransfer.files]; run(); };
+strict.onchange = () => files.length && run();
+</script>
+</body>
+</html>

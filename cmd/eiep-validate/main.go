@@ -37,15 +37,15 @@ func main() {
 	plans := flag.Bool("plans", false, "list each EIEP14A plan with the attributes that apply to it, such as requirements and perks")
 	strict := flag.Bool("strict", false, "also warn about values longer than the spec allows and plans sharing a description")
 	flag.Usage = func() {
-		fmt.Fprintln(os.Stderr, "usage: eiep-validate [--json] [--all] [--strict] [--plans] FILE...")
+		fmt.Fprintln(os.Stderr, "usage: eiep-validate [--json] [--all] [--strict] [--plans] [FILE...]")
 		fmt.Fprintln(os.Stderr, "Validates EIEP files strictly against the Electricity Authority spec.")
+		fmt.Fprintln(os.Stderr, "With no FILE, opens a web UI in the browser.")
 		fmt.Fprintln(os.Stderr, "Exit status: 0 valid (warnings allowed), 1 findings, 2 usage or read error.")
 		flag.PrintDefaults()
 	}
 	flag.Parse()
 	if flag.NArg() == 0 {
-		flag.Usage()
-		os.Exit(2)
+		serve()
 	}
 
 	exit := 0
@@ -58,10 +58,7 @@ func main() {
 			exit = 2
 			continue
 		}
-		r := eiep.Check(data)
-		if !*strict {
-			r.Warnings = slices.DeleteFunc(r.Warnings, func(f eiep.Finding) bool { return strictOnly[f.Code] })
-		}
+		r := check(data, *strict)
 		findings := r.Findings
 		if len(findings) > 0 && exit == 0 {
 			exit = 1
@@ -97,6 +94,14 @@ func main() {
 		}
 	}
 	os.Exit(exit)
+}
+
+func check(data []byte, strict bool) eiep.Result {
+	r := eiep.Check(data)
+	if !strict {
+		r.Warnings = slices.DeleteFunc(r.Warnings, func(f eiep.Finding) bool { return strictOnly[f.Code] })
+	}
+	return r
 }
 
 func printText(path string, r eiep.Result, all bool) {
