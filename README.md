@@ -2,6 +2,8 @@
 
 Validates NZ Electricity Authority EIEP files strictly against their specs.
 
+Made by <https://lightswitch.nz> - Electricity Comparison website.
+
 Supported formats:
 
 - EIEP13A (ICPCONS) 1.1–1.3
