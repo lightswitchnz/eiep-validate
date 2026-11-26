@@ -82,6 +82,7 @@ func TestEIEP14A(t *testing.T) {
 		{"comma list", doc14(map[int]string{11: `CUSTOMER,General domestic,"AT_anzsic_000000,AT_START_20250401"`}), []at{{11, "Attribute identifiers"}}},
 		{"rate too many digits", doc14(map[int]string{14: "TARIFF,RSU-24UN,TR_CKHK_RSU,TT_any,1234567,"}), []at{{14, "Tariff rate"}}},
 		{"bad fixed/variable", doc14(map[int]string{9: "TARIFFTYPE,TT_dly_sup_chg,Daily supply charge,X,Day,B,,,"}), []at{{9, "Fixed / variable"}}},
+		{"fixed energy rate", doc14(map[int]string{10: "TARIFFTYPE,TT_any,Anytime,F,kWh,X,,SC_night,"}), []at{{10, "Fixed / variable"}}},
 		{"bad RCC-POA", doc14(map[int]string{10: "TARIFFTYPE,TT_any,Anytime,V,kWh,X,UN24,SC_night,"}), []at{{10, "RCC-POA"}}},
 		{"RCC-POA over 24", doc14(map[int]string{10: "TARIFFTYPE,TT_any,Anytime,V,kWh,X,UN-25,SC_night,"}), []at{{10, "RCC-POA"}}},
 		{"bad time", doc14(map[int]string{6: "SCHEDULE,SC_night,1,21.00,24:00,ANY,ANY"}), []at{{6, "Start time"}}},
