@@ -5,7 +5,7 @@ Go CLI that strictly validates NZ Electricity Authority EIEP files. Stdlib only,
 ## Layout
 
 - `cmd/eiep-validate` — CLI: flags, output, colour.
-- `internal/eiep` — validation library.
+- `eiep` — validation library.
   - `validate.go` — `Format`/`Layout`/`File` types, `formats` registry keyed by HDR file type.
   - `field.go` — `Field` and `Kind` definitions and per-field checks.
   - `eiep13a.go`, `eiep14a.go`, `eiep14v1.go` — one file per format; add new formats the same way and register in `formats`.

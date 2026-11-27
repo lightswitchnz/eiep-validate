@@ -173,6 +173,9 @@ func checkEIEP14ARecord(typ string, v []string) []Problem {
 	case "SCHEDULE":
 		p = append(p, checkSchedule(fs[2:], v[2:])...)
 	case "TARIFFTYPE":
+		if v[3] == "F" && foldIn(v[4], []string{"kWh", "kVAh", "kVArh"}) {
+			add(3, "fixed_energy", fmt.Sprintf("F (fixed) with unit %s; a rate per unit of energy is variable, use V", v[4]))
+		}
 		if ok(6) {
 			for _, pair := range strings.Split(v[6], " ") {
 				m := rccPOARe.FindStringSubmatch(pair)

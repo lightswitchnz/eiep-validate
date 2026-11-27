@@ -11,7 +11,7 @@ import (
 	"os/exec"
 	"runtime"
 
-	"eiep-validate/internal/eiep"
+	"github.com/lightswitchnz/eiep-validate/eiep"
 )
 
 //go:embed web.html

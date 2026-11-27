@@ -9,7 +9,7 @@ import (
 	"slices"
 	"strings"
 
-	"eiep-validate/internal/eiep"
+	"github.com/lightswitchnz/eiep-validate/eiep"
 )
 
 // perKind is how many findings of one kind are printed before the rest are summarised.
