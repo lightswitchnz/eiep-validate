@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-// EIEP 14A: Retailer product information (PRCSCHD), v1.0 effective 30 October 2026.
+// EIEP 14A: Retailer product information (PRCSCHD), v1.1 effective 30 October 2026.
 // This protocol writes Num n.d as up to n integer and d decimal digits (a rate is "Num 6.6"),
 // so Len below is n+d.
 // Versions are keyed "14A" for EIEP14A, which declares 1.0 (2.x in drafts), and "1" for the original EIEP14.
@@ -58,8 +58,8 @@ func recordType(name string) Field {
 	return Field{Name: "Record type", Kind: Char, Len: 15, Required: true, Codes: []string{name}}
 }
 
-func attributeIDs(n int) Field {
-	return Field{Name: "Attribute identifiers", Kind: IdentList, Len: n, Hint: "ATTRIBUTE identifiers separated by spaces", JSON: "AttributeIds"}
+func attributeIDs() Field {
+	return Field{Name: "Attribute identifiers", Kind: IdentList, Len: 2000, Hint: "ATTRIBUTE identifiers separated by spaces", JSON: "AttributeIds"}
 }
 
 var eiep14aRecords = map[string][]Field{
@@ -71,7 +71,7 @@ var eiep14aRecords = map[string][]Field{
 	},
 	"ATTRIBUTE": {
 		recordType("ATTRIBUTE"),
-		{Name: "Attribute record identifier", Kind: Ident, Len: 20, Required: true, JSON: "AttributeId"},
+		{Name: "Attribute record identifier", Kind: Ident, Len: 30, Required: true, JSON: "AttributeId"},
 		{Name: "Attribute code", Kind: Char, Len: 50, Hint: "e.g. ANZSIC, KVA_MAX, EXIT_FEE", JSON: "Attribute"},
 		{Name: "Date value", Kind: ISODate, JSON: "DateValue"},
 		{Name: "Numerical value", Kind: Num, Len: 28, Dec: 8, JSON: "NumValue"},
@@ -80,7 +80,7 @@ var eiep14aRecords = map[string][]Field{
 	},
 	"SCHEDULE": {
 		recordType("SCHEDULE"),
-		{Name: "Schedule record identifier", Kind: Ident, Len: 20, Required: true, JSON: "ScheduleId"},
+		{Name: "Schedule record identifier", Kind: Ident, Len: 30, Required: true, JSON: "ScheduleId"},
 		{Name: "Daylight savings adjustment", Kind: Char, Len: 1, Codes: []string{"1", "2"}, Hint: "1 = UTC+13 while daylight saving is in operation, 2 = always UTC+12", JSON: "DaylightSavings"},
 		{Name: "Start time", Kind: Clock, JSON: "StartTime"},
 		{Name: "End time", Kind: Clock, JSON: "EndTime"},
@@ -89,31 +89,31 @@ var eiep14aRecords = map[string][]Field{
 	},
 	"TARIFFTYPE": {
 		recordType("TARIFFTYPE"),
-		{Name: "Tariff type identifier", Kind: Ident, Len: 20, Required: true, JSON: "TariffTypeId"},
+		{Name: "Tariff type identifier", Kind: Ident, Len: 30, Required: true, JSON: "TariffTypeId"},
 		{Name: "Tariff name", Kind: Char, Len: 50, Required: true, JSON: "Description"},
 		{Name: "Fixed / variable", Kind: Char, Len: 1, Required: true, Codes: []string{"F", "V"}, Hint: "F = fixed, V = variable", JSON: "FixedVariable"},
 		{Name: "Unit type", Kind: Char, Len: 25, Hint: "e.g. Day, kWh, kVA", JSON: "Unit"},
 		{Name: "Flow direction", Kind: Char, Len: 1, Codes: []string{"X", "I", "B"}, Hint: "X = consumption, I = generation, B = both", JSON: "FlowDirection"},
-		{Name: "RCC-POA", Kind: Char, Len: 50, JSON: "RCC-POA"},
-		{Name: "Schedule identifiers", Kind: IdentList, Len: 200, Hint: "SCHEDULE identifiers separated by spaces", JSON: "ScheduleIds"},
-		attributeIDs(256),
+		{Name: "RCC-POA", Kind: Char, Len: 2000, JSON: "RCC-POA"},
+		{Name: "Schedule identifiers", Kind: IdentList, Len: 2000, Hint: "SCHEDULE identifiers separated by spaces", JSON: "ScheduleIds"},
+		attributeIDs(),
 	},
 	"TARIFFREGION": {
 		recordType("TARIFFREGION"),
-		{Name: "Tariff region identifier", Kind: Ident, Len: 20, Required: true, JSON: "TariffRegionId"},
+		{Name: "Tariff region identifier", Kind: Ident, Len: 30, Required: true, JSON: "TariffRegionId"},
 		{Name: "Description", Kind: Char, Len: 50, JSON: "Description"},
 	},
 	"NETWORK": {
 		recordType("NETWORK"),
 		{Name: "Distributor participant identifier", Kind: Char, Len: 4, JSON: "Network"},
-		{Name: "NSP", Kind: Char, Len: 200, JSON: "NSP"},
-		{Name: "Distributor price category code", Kind: Char, Len: 200, JSON: "DistributorPriceCategory"},
-		{Name: "Distributor loss category code", Kind: Char, Len: 50, JSON: "DistributorLossCategory"},
+		{Name: "NSP", Kind: Char, Len: 2000, JSON: "NSP"},
+		{Name: "Distributor price category code", Kind: Char, Len: 2000, JSON: "DistributorPriceCategory"},
+		{Name: "Distributor loss category code", Kind: Char, Len: 2000, JSON: "DistributorLossCategory"},
 	},
 	"CUSTOMER": {
 		recordType("CUSTOMER"),
 		{Name: "Customer text", Kind: Char, Len: 1000, JSON: "CustomerGroup"},
-		attributeIDs(200),
+		attributeIDs(),
 	},
 	"PLAN": {
 		recordType("PLAN"),
@@ -123,15 +123,15 @@ var eiep14aRecords = map[string][]Field{
 		{Name: "End date", Kind: ISODate, JSON: "EndDate"},
 		{Name: "Close date", Kind: ISODate, JSON: "CloseDate"},
 		{Name: "Low fixed charge", Kind: Char, Len: 1, Required: true, Codes: []string{"Y", "N"}, JSON: "LowFixedCharge"},
-		attributeIDs(256),
+		attributeIDs(),
 	},
 	"TARIFF": {
 		recordType("TARIFF"),
 		{Name: "Tariff identifier", Kind: Char, Len: 50, JSON: "Tariff"},
-		{Name: "Tariff region identifier", Kind: Ident, Len: 20, Hint: "blank if the rate is common across all networks", JSON: "TariffRegionId"},
-		{Name: "Tariff type identifier", Kind: Ident, Len: 20, Required: true, JSON: "TariffTypeId"},
+		{Name: "Tariff region identifier", Kind: Ident, Len: 30, Hint: "blank if the rate is common across all networks", JSON: "TariffRegionId"},
+		{Name: "Tariff type identifier", Kind: Ident, Len: 30, Required: true, JSON: "TariffTypeId"},
 		{Name: "Tariff rate", Kind: Num, Len: 12, Dec: 6, Required: true, JSON: "Rate"},
-		attributeIDs(256),
+		attributeIDs(),
 	},
 }
 

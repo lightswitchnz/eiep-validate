@@ -13,8 +13,8 @@ func TestJSONSpecExamples(t *testing.T) {
 		want     []at
 		warnings int
 	}{
-		{"example1.json", []at{{10, "$.RecordCount"}, {30, "$.Retailers[0].Attributes[2].DateValue"}}, 6},
-		{"example2.json", nil, 10},
+		{"example1.json", []at{{10, "$.RecordCount"}, {30, "$.Retailers[0].Attributes[2].DateValue"}}, 4},
+		{"example2.json", nil, 4},
 		{"example3.json", nil, 4},
 		{"example4.json", []at{{10, "$.RecordCount"}, {283, "$.Retailers[0].CustomerGroups[1].Plans[0].Tariffs[4].TariffRegion"}}, 4},
 	}
