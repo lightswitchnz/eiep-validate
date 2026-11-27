@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/lightswitchnz/eiep-validate/compare/v1.1.0...v1.2.0) (2026-11-27)
+
+
+### Features
+
+* allow longer fields ([56b44d4](https://github.com/lightswitchnz/eiep-validate/commit/56b44d42aa590aaf43178b3accf1adf929cf3acb))
+
 ## [1.1.0](https://github.com/lightswitchnz/eiep-validate/compare/v1.0.0...v1.1.0) (2026-11-27)
 
 
